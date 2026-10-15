@@ -47,6 +47,32 @@ jobs:
           CC: clang
         run: cargo test -p ime-ffi --test c_harness -- --nocapture
 
+  # The IBus engine is one static (musl) binary, so a build made here must work on every Ubuntu
+  # release that has IBus: the same binary is exercised against the IBus of an old and a new LTS.
+  linux-ibus:
+    name: IBus end-to-end (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+      - name: install IBus and its Python bindings
+        run: sudo apt-get update && sudo apt-get install -y ibus python3-gi gir1.2-ibus-1.0
+      - name: allow the private mount namespace the test uses
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: build the static engine
+        run: cargo build --profile dist -p pkey-ibus --target x86_64-unknown-linux-musl
+      - name: type Vietnamese through a real ibus-daemon
+        run: scripts/linux/e2e-ibus.sh target/x86_64-unknown-linux-musl/dist/ibus-engine-pkey
+      - name: build the .deb
+        run: scripts/linux/build-deb.sh
+
   deny:
     runs-on: ubuntu-latest
     steps:
