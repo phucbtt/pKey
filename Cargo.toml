@@ -11,6 +11,7 @@ members = [
     "crates/ime-winkeys",
     "platform/windows-tsf",
     "platform/windows-app",
+    "platform/linux-ibus",
     "crates/ime-testing",
     "apps/ime-cli",
 ]

@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+# Per-user settings in ~/.config/pkey are left alone (spec §24.3).
+exit 0

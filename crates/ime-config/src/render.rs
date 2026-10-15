@@ -96,6 +96,7 @@ impl Config {
         put(t, "windows_hook_fallback", c.windows_hook_fallback);
         put_list(t, "windows_hook_apps", c.windows_hook_apps.iter().cloned());
         put(t, "linux_surrounding_text", c.linux_surrounding_text);
+        put(t, "linux_preedit", c.linux_preedit);
 
         let t = section(root, "privacy");
         put(

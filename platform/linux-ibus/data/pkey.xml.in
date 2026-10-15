@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+  <name>org.pkey.IBus.pKey</name>
+  <description>pKey Vietnamese Input Method</description>
+  <exec>@EXEC@ --ibus</exec>
+  <version>@VERSION@</version>
+  <author>pKey</author>
+  <license>MIT</license>
+  <homepage>https://github.com/phucbtt/pKey</homepage>
+  <textdomain>pkey</textdomain>
+  <engines>
+    <engine>
+      <name>pkey</name>
+      <language>vi</language>
+      <license>MIT</license>
+      <author>pKey</author>
+      <icon>@ICON@</icon>
+      <layout>default</layout>
+      <longname>pKey</longname>
+      <description>Telex, VNI, VIQR</description>
+      <rank>50</rank>
+    </engine>
+  </engines>
+</component>

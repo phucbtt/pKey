@@ -493,6 +493,7 @@ fn read_config(cx: &mut Ctx, root: &dyn TableLike) -> Config {
             "windows_hook_fallback",
             "windows_hook_apps",
             "linux_surrounding_text",
+            "linux_preedit",
         ],
     );
     let d = Compat::default();
@@ -521,6 +522,7 @@ fn read_config(cx: &mut Ctx, root: &dyn TableLike) -> Config {
             "linux_surrounding_text",
             d.linux_surrounding_text,
         ),
+        linux_preedit: cx.boolean(t, "compat", "linux_preedit", d.linux_preedit),
     };
 
     let t = cx.section(root, "privacy");

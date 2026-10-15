@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+cat <<'MSG'
+pKey is installed. To use it:
+  1. Restart IBus:            ibus restart        (or log out and in)
+  2. Add the input source:    Settings > Keyboard > Input Sources > + > Vietnamese > pKey
+Your settings live in ~/.config/pkey/config.toml.
+MSG
+exit 0

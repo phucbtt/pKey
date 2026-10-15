@@ -14,7 +14,8 @@ pKey là bộ gõ tiếng Việt đa nền tảng (Telex, VNI, VIQR) với lõi 
 | C ABI (`ime-ffi`) cho macOS/Fcitx5 | Xong, có test và C harness |
 | **App khay kiểu EVKey** (`pkey.exe`, hook bàn phím, chạy mọi ứng dụng) | Chạy được; đã gõ thật vào ô soạn thảo Windows qua e2e; xem [spec app](docs/specs/2026-10-15-standalone-app.md). Chưa thử trên Chrome/Word/VS Code |
 | **Windows (TSF)**, x64 + x86 | Chạy được trên TSF thật qua text store giả; **chưa thử trong ứng dụng thật**, xem [spec Windows](docs/specs/2026-10-15-windows-tsf.md) |
-| macOS (IMK), Linux (IBus, Fcitx5) | Chưa bắt đầu (cần máy thật để phát triển và kiểm chứng) |
+| **Linux / Ubuntu (IBus)** | Chạy được: Telex/VNI/VIQR, preedit, VI/EN, ô mật khẩu; kiểm thử tự động qua `ibus-daemon` thật (15/15); một binary tĩnh cho mọi bản Ubuntu/Debian; có `.deb`. **Chưa thử tay trong app thật**, xem [spec IBus](docs/specs/2026-10-15-linux-ibus.md) |
+| macOS (IMK), Linux Fcitx5 | Chưa bắt đầu (cần máy thật để phát triển và kiểm chứng) |
 | Settings UI, tray, onboarding, installer ký, updater | Chưa bắt đầu |
 
 ## Cấu trúc
@@ -29,11 +30,13 @@ crates/ime-runtime      engine + config + macro + profile + reload, dùng chung 
 crates/ime-ffi          C ABI (include/pkey.h)
 crates/ime-testing      FakeHost, golden, test vét cạn, proptest
 platform/windows-app    app khay (hook bàn phím), như EVKey
+platform/linux-ibus     engine IBus cho Ubuntu/Debian (`ibus-engine-pkey`, thuần Rust qua zbus)
 platform/windows-tsf    text service Windows (bàn phím cài trong Settings, tùy chọn)
 crates/ime-winkeys      bảng phím Windows dùng chung
 apps/ime-cli            công cụ dòng lệnh `pkey-cli`
 tests/                  golden files, C harness
 scripts/windows         cài / gỡ bản dev
+scripts/linux           đóng gói .deb, cài không qua gói, test e2e với ibus-daemon
 ```
 
 ## Build và test
@@ -50,6 +53,30 @@ cargo run -p ime-cli -- config validate path\to\config.toml
 ```
 
 Windows 32-bit: `rustup target add i686-pc-windows-msvc`, rồi thêm `--target i686-pc-windows-msvc`.
+
+## Ubuntu / Debian (IBus)
+
+Bản gõ cho Linux là một engine IBus, hoạt động trên cả X11 lẫn Wayland và mọi bản Ubuntu có IBus
+(GNOME mặc định đã dùng IBus). Engine là **một file tĩnh**, không phụ thuộc phiên bản thư viện hệ thống.
+
+```
+rustup target add x86_64-unknown-linux-musl     # một lần
+scripts/linux/build-deb.sh                      # tạo dist/pkey-ibus_<ver>_amd64.deb
+sudo apt install ./dist/pkey-ibus_*_amd64.deb
+ibus restart                                    # hoặc đăng xuất rồi đăng nhập
+```
+
+Rồi vào Settings › Keyboard › Input Sources › + › Vietnamese › **pKey**. Đổi Việt/English bằng
+`Ctrl+Shift` (chỉ báo VI/EN chỉ hiện nếu bảng điều khiển của desktop hỗ trợ property IBus). Cấu hình ở `~/.config/pkey/config.toml`. Từ đang gõ hiện dạng preedit nên desktop sẽ gạch chân; `compat.linux_preedit = false` gõ thẳng chữ để không gạch chân nhưng là thử nghiệm và có thể loạn phím khi gõ nhanh. Không dùng `.deb`:
+`scripts/linux/install.sh` (và `--uninstall`). Cài đặt cần root một lần vì `ibus-daemon` chỉ đọc
+`/usr/share/ibus/component`.
+
+Kiểm thử không cần cài (không đụng phiên IBus đang chạy):
+
+```
+cargo build -p pkey-ibus
+scripts/linux/e2e-ibus.sh
+```
 
 ## Bản một file (portable)
 

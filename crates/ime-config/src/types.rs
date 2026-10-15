@@ -227,6 +227,9 @@ pub struct Compat {
     pub windows_hook_fallback: bool,
     pub windows_hook_apps: Vec<String>,
     pub linux_surrounding_text: bool,
+    /// Linux (IBus): show the word being typed as preedit. Desktops draw preedit underlined; with
+    /// `false` the word is typed straight into the text field instead (needs surrounding text).
+    pub linux_preedit: bool,
 }
 
 impl Default for Compat {
@@ -236,6 +239,7 @@ impl Default for Compat {
             windows_hook_fallback: false,
             windows_hook_apps: Vec::new(),
             linux_surrounding_text: false,
+            linux_preedit: true,
         }
     }
 }
