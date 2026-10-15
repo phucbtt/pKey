@@ -56,14 +56,13 @@ Windows 32-bit: `rustup target add i686-pc-windows-msvc`, rồi thêm `--target 
 
 ## Ubuntu / Debian (IBus)
 
-Cài như ibus-bamboo, hai lệnh (không cần build):
+Cài bằng **một lệnh**:
 
 ```
-wget https://github.com/phucbtt/pKey/releases/download/v0.1.0/pkey-ibus_0.1.0_amd64.deb
-sudo apt install ./pkey-ibus_0.1.0_amd64.deb
+curl -fsSL https://raw.githubusercontent.com/phucbtt/pKey/main/scripts/linux/install-release.sh | sh
 ```
 
-Sau đó chạy `ibus restart`, rồi thêm pKey: **Settings › Keyboard › Input Sources › + › Vietnamese › pKey**.
+Lệnh tải gói `.deb` của bản phát hành, kiểm tra SHA256, cài bằng `apt` (kéo theo `ibus`), thêm pKey vào nguồn nhập và khởi động lại IBus. Các nguồn nhập khác của bạn được giữ nguyên. Chuyển sang pKey bằng `Super+Space`.
 
 Gỡ: `sudo apt remove pkey-ibus`. Cấu hình ở `~/.config/pkey/config.toml` không bị xóa.
 
