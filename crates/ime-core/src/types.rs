@@ -138,7 +138,10 @@ impl fmt::Debug for KeyInput {
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum EngineAction {
-    UpdatePreedit { text: String, caret: Caret },
+    UpdatePreedit {
+        text: String,
+        caret: Caret,
+    },
     Commit(String),
     /// Remove the preedit without committing anything.
     CancelComposition,
@@ -168,7 +171,9 @@ pub struct Output {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Notify {
-    FocusIn { caps: Capabilities },
+    FocusIn {
+        caps: Capabilities,
+    },
     FocusOut,
     CaretMoved,
     SelectionChanged,

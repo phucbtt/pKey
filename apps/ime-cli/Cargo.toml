@@ -10,6 +10,5 @@ name = "vietime"
 path = "src/main.rs"
 
 [dependencies]
-clap.workspace = true
 ime-core.workspace = true
 ime-testing.workspace = true

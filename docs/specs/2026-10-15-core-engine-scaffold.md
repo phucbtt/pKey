@@ -1,34 +1,43 @@
-# 2026-10-15 — Khung workspace và lõi engine (P0-02, P1 một phần)
+# 2026-10-15 — Lõi engine, FakeHost, golden runner, CLI (P0-02, P1 một phần)
 
-**Trạng thái: code đã viết, CHƯA biên dịch và CHƯA chạy test.** Máy không có MSVC linker (xem "How to test"). Mọi hành vi bên dưới là thiết kế, chưa được kiểm chứng.
+**Trạng thái:** biên dịch sạch (`cargo check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check`). **Chưa chạy test nào**: máy không có MSVC linker nên không link được file thực thi (xem "How to test"). Mọi hành vi bên dưới mới được kiểm bằng đọc/mô phỏng tay, chưa kiểm chứng bằng chạy.
 
 ## Context / Why
-Bắt đầu triển khai theo `SPEC_VietIME_Full_Build.md` và `IMPLEMENTATION_PHASES.md`: dựng workspace (P0-02) và lõi engine (P1: CORE-001/002/003/006, Telex + VNI).
+Bắt đầu triển khai theo `SPEC_VietIME_Full_Build.md` và `IMPLEMENTATION_PHASES.md`: dựng workspace (P0-02) và lõi engine (P1: CORE-001/002/003/006, Telex + VNI, FakeHost, golden, CLI simulate).
 
 ## Decision
 - Làm phần không phụ thuộc OS trước; các POC native (TSF/IMK/IBus/Fcitx5) cần máy thật và chưa làm.
-- Giản lược so với spec (ghi lại để bù sau):
-  - Telex/VNI nằm trong `ime-core::composition`, chưa tách thành `ime-telex`/`ime-vni`/`ime-viqr`.
+- Vì chưa có linker, `serde`, `toml`, `clap`, `proptest` (cần build script/proc-macro) bị loại khỏi workspace để còn kiểm tra biên dịch được. Thay bằng:
+  - golden file định dạng dòng tự viết (`tests/golden/*.golden`) thay vì YAML/TOML;
+  - phân tích tham số CLI tự viết;
+  - test ngẫu nhiên bằng xorshift cố định seed thay vì proptest.
+  Khi có toolchain, có thể đưa lại `clap`, `proptest`, `toml`.
+- Giản lược khác so với spec (cần bù sau):
+  - Telex/VNI nằm trong `ime-core::composition`, chưa tách `ime-telex`/`ime-vni`/`ime-viqr`.
   - Bảng vần là mảng Rust (`ime-vietnamese/src/rhymes.rs`), chưa phải `rhymes.toml`.
   - NFC render bằng `compose_char` (ghép combining rồi NFC), chưa dùng bảng tra.
   - `EngineConfig` là struct trong `ime-core`; `ime-config` (TOML, migrate) chưa có.
-  - VIQR: enum có, luật chưa làm (CORE-013, P4). Macro, hotkey, profile, C ABI (`ime-ffi`) chưa làm.
-  - Golden fixture dự định dùng TOML thay YAML để tránh phụ thuộc `serde_yaml`.
+  - Chưa có: VIQR (CORE-013), macro, hotkey, profile, C ABI `ime-ffi`, fuzz, bench.
 
 ## Design
 - `crates/ime-unicode`: `Shape`, `Tone`, `compose_char`, NFC/NFD, `Caret` (4 đơn vị).
-- `crates/ime-vietnamese`: `Letter`, `analyze` (onset/nucleus/coda, xử lý `qu`/`gi`), `validity` (Valid/Prefix/Invalid), `tone_index` (§8.3), `render`.
-- `crates/ime-core`: `Engine` (contexts, `process`, `would_consume`, `notify`, `set_mode`), `Composition` (áp dấu, hoàn tác khi lặp phím, backspace 2 chế độ, auto-restore), kiểu dữ liệu §7.1. `KeyInput`/`EngineAction` có `Debug` đã che nội dung gõ.
-- `crates/ime-testing`, `apps/ime-cli`: mới là khung rỗng (placeholder), chưa có FakeHost, golden runner, CLI.
+- `crates/ime-vietnamese`: `Letter`, `analyze` (onset/nucleus/coda, `qu`/`gi`), `validity` (Valid/Prefix/Invalid), `tone_index` (§8.3), `render`.
+- `crates/ime-core`: `Engine` (contexts, `process`, `would_consume`, `notify`, `set_mode`), `Composition` (áp dấu, hoàn tác khi lặp phím, backspace 2 chế độ, auto-restore). `KeyInput`/`EngineAction` có `Debug` che nội dung gõ.
+  - Quy tắc hoàn tác phím `w`/`7`: chỉ hoàn tác khi nguyên âm cuối của cụm đang mang dấu của phím đó (nếu không, `uwow` sẽ phá chữ `ươ`).
+- `crates/ime-testing`: `FakeHost` (ghi nhận vi phạm hợp đồng: `would_consume` lệch `process`, Backspace lọt xuống document khi đang soạn, Cancel không có preedit…), `parse_keys`, `golden` (parser + runner).
+- `apps/ime-cli` (binary `vietime`): `simulate`, `golden`.
+- `tests/golden/telex.golden`, `vni.golden`: ~130 ca; giá trị mong đợi lấy từ chính tả tiếng Việt, không lấy từ output của engine.
 
 ## API / Schema changes
 Mới hoàn toàn, chưa có API công khai ổn định. Không có breaking change.
 
 ## How to test
-Chưa chạy được. Cần cài C toolchain trước. Sau đó, chạy trong PowerShell (không dùng Git Bash vì `link.exe` của coreutils đè linker MSVC):
+Cần C toolchain (Visual Studio Build Tools, workload C++). Chạy trong PowerShell, không dùng Git Bash (`link.exe` của coreutils đè linker MSVC):
 ```
-cargo test -p ime-unicode -p ime-vietnamese -p ime-core
+cargo test --workspace
+cargo run -p ime-cli -- simulate "tieengs vieejt "
+cargo run -p ime-cli -- golden tests/golden/telex.golden tests/golden/vni.golden
 ```
-Các test đã viết: bảng đặt dấu §8.3, valid/invalid/prefix syllable, 134 ký tự NFC, thứ tự NFD, caret, và test engine (consume, mode, secure input, cô lập context, `would_consume == process`).
+Kiểm tra không cần linker (đã chạy được): `cargo check --workspace --all-targets`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --all -- --check`.
 
-Việc tiếp theo khi có toolchain: build + sửa lỗi biên dịch, rồi viết FakeHost, golden runner (fixture trong `tests/golden/`), CLI `simulate`, proptest/fuzz, `ime-ffi`.
+Rủi ro đã biết khi chạy lần đầu: một số ca golden có thể lệch do lỗi thật của engine hoặc do kỳ vọng sai; phải xét từng ca theo chính tả, không sửa kỳ vọng cho khớp output.

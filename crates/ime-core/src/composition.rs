@@ -271,11 +271,13 @@ impl Composition {
         }
         let range = a.nuc_start..a.nuc_end;
 
-        // Pressing the key again undoes its marks.
-        if let Some(i) = range.clone().rev().find(|&i| {
-            self.letters[i].mark_key == Some(key)
-                && matches!(self.letters[i].shape, Shape::Horn | Shape::Breve)
-        }) {
+        // Pressing the key again undoes its marks, but only when the last vowel of the cluster
+        // carries one: in `ưo` + w the first mark must stay and `o` becomes `ơ`.
+        let last = range.end - 1;
+        if self.letters[last].mark_key == Some(key)
+            && matches!(self.letters[last].shape, Shape::Horn | Shape::Breve)
+        {
+            let i = last;
             if self.letters[i].standalone {
                 let up = self.letters[i].upper;
                 self.letters[i] = Letter::plain(key, up);

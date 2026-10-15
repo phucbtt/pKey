@@ -158,7 +158,8 @@ fn flush(cfg: &EngineConfig, ctx: &mut Context, out: &mut Output) {
 fn preedit(cfg: &EngineConfig, ctx: &Context, out: &mut Output) {
     let text = ctx.comp.render(cfg);
     let caret = caret_at_end(&text);
-    out.actions.push(EngineAction::UpdatePreedit { text, caret });
+    out.actions
+        .push(EngineAction::UpdatePreedit { text, caret });
 }
 
 fn step(cfg: &EngineConfig, ctx: &mut Context, ev: &KeyInput) -> Output {
@@ -317,7 +318,10 @@ mod tests {
     fn english_mode_and_secure_input_pass_through() {
         let (mut e, id) = engine();
         let out = e.set_mode(id, InputMode::English);
-        assert_eq!(out.actions, vec![EngineAction::ModeChanged(InputMode::English)]);
+        assert_eq!(
+            out.actions,
+            vec![EngineAction::ModeChanged(InputMode::English)]
+        );
         for o in type_str(&mut e, id, "tieengs") {
             assert_eq!(o, Output::default());
         }

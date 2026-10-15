@@ -179,7 +179,8 @@ pub fn validity(letters: &[Letter], tone: Tone, foreign_onsets: bool) -> Validit
         return Validity::Invalid;
     }
     let a = analyze(letters);
-    let text = |r: std::ops::Range<usize>| -> String { letters[r].iter().map(Letter::disp).collect() };
+    let text =
+        |r: std::ops::Range<usize>| -> String { letters[r].iter().map(Letter::disp).collect() };
     let onset = text(0..a.nuc_start);
     let mut nucleus = text(a.nuc_start..a.nuc_end);
     // `gi` swallowed the i of `iê` (giêng, giếng): validate it as the `iê` cluster again.
@@ -341,8 +342,8 @@ mod tests {
     #[test]
     fn invalid_syllables() {
         for w in [
-            "windows", "str", "ngi", "ci", "ghu", "tapf", "book", "ưindơs", "aa", "ơơ", "qa",
-            "fa", "bcd",
+            "windows", "str", "ngi", "ci", "ghu", "tapf", "book", "ưindơs", "aa", "ơơ", "qa", "fa",
+            "bcd",
         ] {
             assert_eq!(v(w, Tone::None), Validity::Invalid, "{w}");
         }
@@ -356,8 +357,8 @@ mod tests {
     #[test]
     fn prefixes() {
         for w in [
-            "t", "tr", "n", "ng", "ngh", "q", "qu", "tie", "tieng", "ă", "đ", "ưo", "oă", "g", "gh",
-            "hoan",
+            "t", "tr", "n", "ng", "ngh", "q", "qu", "tie", "tieng", "ă", "đ", "ưo", "oă", "g",
+            "gh", "hoan",
         ] {
             let got = v(w, Tone::None);
             assert!(

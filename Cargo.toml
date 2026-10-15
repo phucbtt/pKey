@@ -16,10 +16,6 @@ publish = false
 
 [workspace.dependencies]
 bitflags = "2"
-clap = { version = "4", features = ["derive"] }
-proptest = "1"
-serde = { version = "1", features = ["derive"] }
-toml = "0.8"
 unicode-normalization = "0.1"
 unicode-segmentation = "1"
 

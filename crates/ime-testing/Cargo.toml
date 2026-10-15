@@ -8,8 +8,3 @@ publish.workspace = true
 [dependencies]
 ime-core.workspace = true
 ime-unicode.workspace = true
-serde.workspace = true
-toml.workspace = true
-
-[dev-dependencies]
-proptest.workspace = true
