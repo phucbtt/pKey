@@ -1,0 +1,9 @@
+[package]
+name = "ime-vietnamese"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+ime-unicode.workspace = true
