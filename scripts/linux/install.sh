@@ -3,8 +3,10 @@
 # Needs root only to write the component file, which ibus-daemon reads from
 # /usr/share/ibus/component and nowhere else.
 #
-#   scripts/linux/install.sh              build and install under /usr
+#   scripts/linux/install.sh              build and install under /usr, restart IBus
 #   scripts/linux/install.sh --uninstall
+#
+# Needs Rust (rustup) and sudo. The Rust target for the static binary is added if missing.
 set -eu
 here=$(cd "$(dirname "$0")/../.." && pwd)
 prefix=${PREFIX:-/usr}
@@ -18,6 +20,13 @@ if [ "${1:-}" = "--uninstall" ]; then
 fi
 
 target=x86_64-unknown-linux-musl
+command -v cargo >/dev/null 2>&1 || {
+    echo "Rust is required: install it from https://rustup.rs and run this again." >&2
+    exit 1
+}
+if command -v rustup >/dev/null 2>&1 && ! rustup target list --installed | grep -q "^$target\$"; then
+    rustup target add "$target"
+fi
 (cd "$here" && cargo build --profile dist -p pkey-ibus --target "$target")
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$here/Cargo.toml" | head -1)
 xml=$(mktemp)
@@ -27,4 +36,7 @@ sed "s#@EXEC@#$prefix/libexec/ibus-engine-pkey#; s#@ICON@#$prefix/share/pkey/pke
 as_root install -Dm755 "$here/target/$target/dist/ibus-engine-pkey" "$prefix/libexec/ibus-engine-pkey"
 as_root install -Dm644 "$here/platform/linux-ibus/data/pkey.png" "$prefix/share/pkey/pkey.png"
 as_root install -Dm644 "$xml" "$prefix/share/ibus/component/pkey.xml"
-echo "installed. Run 'ibus restart', then add pKey in Settings > Keyboard > Input Sources."
+if command -v ibus >/dev/null 2>&1; then
+    ibus restart >/dev/null 2>&1 || true
+fi
+echo "pKey installed. Add it once: Settings > Keyboard > Input Sources > + > Vietnamese > pKey."

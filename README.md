@@ -56,27 +56,19 @@ Windows 32-bit: `rustup target add i686-pc-windows-msvc`, rồi thêm `--target 
 
 ## Ubuntu / Debian (IBus)
 
-Bản gõ cho Linux là một engine IBus, hoạt động trên cả X11 lẫn Wayland và mọi bản Ubuntu có IBus
-(GNOME mặc định đã dùng IBus). Engine là **một file tĩnh**, không phụ thuộc phiên bản thư viện hệ thống.
+Cài bằng **một lệnh** (chạy trong thư mục repo, cần Rust và sudo):
 
 ```
-rustup target add x86_64-unknown-linux-musl     # một lần
-scripts/linux/build-deb.sh                      # tạo dist/pkey-ibus_<ver>_amd64.deb
-sudo apt install ./dist/pkey-ibus_*_amd64.deb
-ibus restart                                    # hoặc đăng xuất rồi đăng nhập
+scripts/linux/install.sh
 ```
 
-Rồi vào Settings › Keyboard › Input Sources › + › Vietnamese › **pKey**. Đổi Việt/English bằng
-`Ctrl+Shift` (chỉ báo VI/EN chỉ hiện nếu bảng điều khiển của desktop hỗ trợ property IBus). Cấu hình ở `~/.config/pkey/config.toml`. Từ đang gõ hiện dạng preedit nên desktop sẽ gạch chân; `compat.linux_preedit = false` gõ thẳng chữ để không gạch chân nhưng là thử nghiệm và có thể loạn phím khi gõ nhanh. Không dùng `.deb`:
-`scripts/linux/install.sh` (và `--uninstall`). Cài đặt cần root một lần vì `ibus-daemon` chỉ đọc
-`/usr/share/ibus/component`.
+Script tự thêm target Rust cần thiết, build engine (một file tĩnh, chạy được trên mọi bản Ubuntu/Debian có IBus), cài và khởi động lại IBus. Sau đó thêm pKey một lần: **Settings › Keyboard › Input Sources › + › Vietnamese › pKey**.
 
-Kiểm thử không cần cài (không đụng phiên IBus đang chạy):
+Gỡ: `scripts/linux/install.sh --uninstall`. Cấu hình nằm ở `~/.config/pkey/config.toml` và không bị xóa.
 
-```
-cargo build -p pkey-ibus
-scripts/linux/e2e-ibus.sh
-```
+Đổi Việt/English bằng `Ctrl+Shift`. Từ đang gõ hiện dạng preedit nên desktop sẽ gạch chân. `compat.linux_preedit = false` gõ thẳng chữ không gạch chân, nhưng đây là tính năng thử nghiệm và có thể loạn phím khi gõ nhanh.
+
+Kiểm thử tự động, không cài và không đụng phiên IBus đang chạy: `scripts/linux/e2e-ibus.sh`.
 
 ## Bản một file (portable)
 
