@@ -56,17 +56,20 @@ Windows 32-bit: `rustup target add i686-pc-windows-msvc`, rồi thêm `--target 
 
 ## Ubuntu / Debian (IBus)
 
-Cài bằng **một lệnh** (chạy trong thư mục repo, cần Rust và sudo):
+Cài như ibus-bamboo, hai lệnh (không cần build):
 
 ```
-scripts/linux/install.sh
+wget https://github.com/phucbtt/pKey/releases/download/v0.1.0/pkey-ibus_0.1.0_amd64.deb
+sudo apt install ./pkey-ibus_0.1.0_amd64.deb
 ```
 
-Script tự thêm target Rust cần thiết, build engine (một file tĩnh, chạy được trên mọi bản Ubuntu/Debian có IBus), cài và khởi động lại IBus. Sau đó thêm pKey một lần: **Settings › Keyboard › Input Sources › + › Vietnamese › pKey**.
+Sau đó chạy `ibus restart`, rồi thêm pKey: **Settings › Keyboard › Input Sources › + › Vietnamese › pKey**.
 
-Gỡ: `scripts/linux/install.sh --uninstall`. Cấu hình nằm ở `~/.config/pkey/config.toml` và không bị xóa.
+Gỡ: `sudo apt remove pkey-ibus`. Cấu hình ở `~/.config/pkey/config.toml` không bị xóa.
 
 Đổi Việt/English bằng `Ctrl+Shift`. Từ đang gõ hiện dạng preedit nên desktop sẽ gạch chân. `compat.linux_preedit = false` gõ thẳng chữ không gạch chân, nhưng đây là tính năng thử nghiệm và có thể loạn phím khi gõ nhanh.
+
+**Cài từ source** (nếu muốn tự build): `scripts/linux/install.sh`, cần Rust và sudo. Gỡ bản cài này bằng `scripts/linux/install.sh --uninstall`.
 
 Kiểm thử tự động, không cài và không đụng phiên IBus đang chạy: `scripts/linux/e2e-ibus.sh`.
 
