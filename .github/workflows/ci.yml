@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: fmt
+        run: cargo fmt --all -- --check
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: test
+        env:
+          # The C ABI harness must run on CI instead of being skipped.
+          PKEY_REQUIRE_C_HARNESS: "1"
+        run: cargo test --workspace
+
+  c-harness-sanitizers:
+    name: C ABI harness under ASan/UBSan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: harness with sanitizers
+        env:
+          PKEY_REQUIRE_C_HARNESS: "1"
+          PKEY_C_SANITIZE: address,undefined
+          CC: clang
+        run: cargo test -p ime-ffi --test c_harness -- --nocapture
+
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2

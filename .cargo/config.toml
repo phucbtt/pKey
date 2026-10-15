@@ -1,0 +1,4 @@
+# Link the C runtime statically on Windows. The programs then need nothing installed on the target
+# machine (no Visual C++ Redistributable), which is what makes the single-file pKey.exe portable.
+[target.'cfg(all(windows, target_env = "msvc"))']
+rustflags = ["-C", "target-feature=+crt-static"]

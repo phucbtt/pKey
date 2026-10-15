@@ -1,9 +1,9 @@
-# VietIME — Kế hoạch phân phase triển khai
+# pKey — Kế hoạch phân phase triển khai
 
 | Thuộc tính | Giá trị |
 |---|---|
 | Ngày | 2026-10-15 |
-| Căn cứ | [SPEC_VietIME_Full_Build.md](SPEC_VietIME_Full_Build.md) v2.0 (tham chiếu `§` là mục trong spec đó) |
+| Căn cứ | [SPEC_pKey_Full_Build.md](SPEC_pKey_Full_Build.md) v2.0 (tham chiếu `§` là mục trong spec đó) |
 | Giả định đội | 3 kỹ sư: **A** = Core/Rust, **B** = Windows, **C** = macOS + Linux. Từ P4, A và B chuyển sang UX |
 | Đơn vị ước lượng | pd = person-day (ngày công). Ước lượng có sai số ±30%, hiệu chỉnh lại sau Gate G0 |
 | Thứ tự nền tảng | **Windows trước** (vertical slice hoàn chỉnh) rồi mới đến macOS/Linux. Lý do: máy phát triển chính là Windows 11, TSF rủi ro cao nhất nên cần bằng chứng sớm. Có thể đổi nếu sản phẩm ưu tiên nền tảng khác |
@@ -96,12 +96,12 @@ Chạy song song với các POC từ W2 vì lõi không phụ thuộc OS.
 | CORE-009 | `ime-macro` (lõi, chưa có UI) | 3 | CORE-002 | §11 |
 | CORE-010 | `ime-ffi` + cbindgen + C harness + ASan/UBSan | 5 | CORE-006 | §13 |
 | CORE-011b | proptest invariants I1–I4, 4 target fuzz, bench Criterion | 4 | CORE-006 | §22.3, §21 |
-| CLI-001 | `vietime simulate`, `golden run`, `config validate/migrate` | 3 | CORE-011a | §18 |
+| CLI-001 | `pkey-cli simulate`, `golden run`, `config validate/migrate` | 3 | CORE-011a | §18 |
 
 Tổng khoảng 56 pd (track A, có hỗ trợ từ B/C khi xong POC).
 
 **Mốc trung gian:**
-- **W5** — `vietime simulate --scheme telex "tieengs vieejt"` ra kết quả đúng (Telex cơ bản).
+- **W5** — `pkey-cli simulate --scheme telex "tieengs vieejt"` ra kết quả đúng (Telex cơ bản).
 - **W7** — C ABI sẵn sàng để C dùng cho IMK/Fcitx5.
 - **W9** — Gate G1.
 
@@ -130,7 +130,7 @@ Tổng khoảng 56 pd (track A, có hỗ trợ từ B/C khi xong POC).
 | WIN-003 | Config snapshot + ACL `ALL APPLICATION PACKAGES` + reload theo generation counter; thử với app UWP | B | 5 | CORE-008 | §14.1 |
 | CORE-012 | Profile resolve + game mode (lõi) | A | 3 | CORE-008 | §12 |
 | IPC-001a | `ime-ipc` v1 (named pipe) + state bus Windows | A | 5 | ADR-005 | §15 |
-| UI-000 | Tray tối thiểu (`vietime-tray.exe`): VI/EN, Telex/VNI, Thoát | A | 3 | IPC-001a | §17.2 |
+| UI-000 | Tray tối thiểu (`pkey-tray.exe`): VI/EN, Telex/VNI, Thoát | A | 3 | IPC-001a | §17.2 |
 | REL-000 | Installer MSI dev (chưa ký): đăng ký TIP x64 + x86, gỡ sạch | B | 5 | WIN-002a | §24.1 |
 | QA-W1 | Kịch bản E2E §22.5 trên Notepad, Chrome, VS Code, Word | B | 3 | tất cả trên | §22.5 |
 
@@ -188,7 +188,7 @@ Tổng khoảng 38 pd. Thứ tự đề xuất: MAC-002 (W8–W11) → LIN-003 (
 | UI-003 | Tray Windows đầy đủ (tạm dừng, profile hiện tại); hoàn thiện menu IMK và indicator IBus/Fcitx5 | B + C | 5 | UI-000 | §17.2 |
 | UI-004 | Onboarding: phát hiện trạng thái kích hoạt thật trên 3 OS, gõ thử, chọn hotkey | A + C | 8 | UI-001 | §17.4 |
 | IPC-001b | IPC macOS/Linux (Unix socket), `GetStatus` / `Pause` / `DoctorReport` | A | 4 | IPC-001a | §15.3 |
-| DIAG-001 | `vietime doctor` (CLI + UI) + test redaction | A | 4 | IPC-001b | §18, §20 |
+| DIAG-001 | `pkey-cli doctor` (CLI + UI) + test redaction | A | 4 | IPC-001b | §18, §20 |
 | CORE-013 | VIQR + golden VIQR | A | 4 | CORE-004 | §9.3 |
 | CORE-014 | Tùy chọn F007 còn lại (`telex_brackets`, F019 `allow_foreign_onsets`) + golden bật/tắt | A | 3 | CORE-004 | §3 |
 | UX-T | Usability test 5 người (Windows trước, macOS/Linux mỗi nền tảng 1–2 người) | A | 3 | UI-004 | §17 |

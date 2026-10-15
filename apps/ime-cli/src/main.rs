@@ -1,4 +1,4 @@
-//! `vietime` developer CLI: run the engine against a fake host and check golden files.
+//! `pkey-cli` developer CLI: run the engine against a fake host and check golden files.
 #![forbid(unsafe_code)]
 
 use std::process::ExitCode;
@@ -7,14 +7,17 @@ use ime_core::{BackspaceMode, EngineConfig, OutputEncoding, Scheme, ToneStyle};
 use ime_testing::{golden, FakeHost};
 
 const USAGE: &str = "\
-vietime - VietIME developer tool
+pkey-cli - pKey developer tool
 
 USAGE:
-  vietime simulate [OPTIONS] <KEYS>     type KEYS into a fake text field and print the result
-  vietime golden <FILE>...              run golden files (see tests/golden), exit 1 on failures
+  pkey-cli simulate [OPTIONS] <KEYS>     type KEYS into a fake text field and print the result
+  pkey-cli golden <FILE>...              run golden files (see tests/golden), exit 1 on failures
+  pkey-cli config default                print the default config.toml
+  pkey-cli config validate <FILE>        check a config file, exit 1 on errors
+  pkey-cli config migrate <FILE> [--write]   upgrade to the current schema (stdout, or in place)
 
 SIMULATE OPTIONS:
-  --scheme telex|vni        typing scheme (default telex)
+  --scheme telex|vni|viqr   typing scheme (default telex)
   --tone-style modern|traditional
   --nfd                     output decomposed Unicode
   --no-spell-check          do not validate syllables
@@ -40,7 +43,8 @@ fn simulate(args: &[String]) -> ExitCode {
             "--scheme" => match it.next().map(String::as_str) {
                 Some("telex") => cfg.scheme = Scheme::Telex,
                 Some("vni") => cfg.scheme = Scheme::Vni,
-                _ => return usage_error("--scheme needs telex|vni"),
+                Some("viqr") => cfg.scheme = Scheme::Viqr,
+                _ => return usage_error("--scheme needs telex|vni|viqr"),
             },
             "--tone-style" => match it.next().map(String::as_str) {
                 Some("modern") => cfg.tone_style = ToneStyle::Modern,
@@ -112,11 +116,88 @@ fn run_golden(files: &[String]) -> ExitCode {
     }
 }
 
+fn run_config(args: &[String]) -> ExitCode {
+    use ime_config::{Config, ConfigError};
+
+    let read = |path: &str| {
+        std::fs::read_to_string(path).map_err(|e| usage_error(&format!("{path}: {e}")))
+    };
+    match args.first().map(String::as_str) {
+        Some("default") => {
+            print!("{}", Config::default().render(None));
+            ExitCode::SUCCESS
+        }
+        Some("validate") => {
+            let Some(path) = args.get(1) else {
+                return usage_error("config validate needs a file");
+            };
+            let text = match read(path) {
+                Ok(t) => t,
+                Err(code) => return code,
+            };
+            match Config::parse(&text) {
+                Ok(l) => {
+                    for w in &l.warnings {
+                        println!("warning: {w}");
+                    }
+                    if let Some(v) = l.migrated_from {
+                        println!("note: file uses schema version {v} and would be migrated");
+                    }
+                    println!("ok");
+                    ExitCode::SUCCESS
+                }
+                Err(ConfigError::Invalid(issues)) => {
+                    for i in issues {
+                        println!("error: {i}");
+                    }
+                    ExitCode::from(1)
+                }
+                Err(e) => {
+                    println!("error: {e}");
+                    ExitCode::from(1)
+                }
+            }
+        }
+        // Rewrites the file in the current schema (comments and unknown keys are kept).
+        Some("migrate") => {
+            let Some(path) = args.get(1) else {
+                return usage_error("config migrate needs a file");
+            };
+            let write = args.get(2).map(String::as_str) == Some("--write");
+            let text = match read(path) {
+                Ok(t) => t,
+                Err(code) => return code,
+            };
+            let loaded = match Config::parse(&text) {
+                Ok(l) => l,
+                Err(e) => {
+                    eprintln!("error: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            let out = loaded.config.render(Some(&text));
+            if write {
+                if let Err(e) = ime_config::save_atomic(std::path::Path::new(path), &loaded.config)
+                {
+                    eprintln!("error: {path}: {e}");
+                    return ExitCode::from(1);
+                }
+                println!("written {path}");
+            } else {
+                print!("{out}");
+            }
+            ExitCode::SUCCESS
+        }
+        _ => usage_error("expected: config default | validate <file> | migrate <file> [--write]"),
+    }
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("simulate") => simulate(&args[1..]),
         Some("golden") => run_golden(&args[1..]),
+        Some("config") => run_config(&args[1..]),
         Some("--help" | "-h" | "help") => {
             print!("{USAGE}");
             ExitCode::SUCCESS

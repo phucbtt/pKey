@@ -1,7 +1,7 @@
-# 2026-10-15 — Phân phase triển khai VietIME
+# 2026-10-15 — Phân phase triển khai pKey
 
 ## Context / Why
-Người dùng yêu cầu chia phase triển khai. §26 của `SPEC_VietIME_Full_Build.md` chỉ có bảng roadmap tóm tắt, thiếu work package, ước lượng, track song song và gate đo được.
+Người dùng yêu cầu chia phase triển khai. §26 của `SPEC_pKey_Full_Build.md` chỉ có bảng roadmap tóm tắt, thiếu work package, ước lượng, track song song và gate đo được.
 
 ## Decision
 - Tạo `docs/IMPLEMENTATION_PHASES.md` làm nguồn chính cho kế hoạch. §26 của spec chỉ giữ bảng tóm tắt và trỏ sang file này.

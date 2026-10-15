@@ -1,0 +1,17 @@
+[package]
+name = "ime-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "pkey_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+ime-runtime.workspace = true
+
+[dev-dependencies]
+cc = "1"

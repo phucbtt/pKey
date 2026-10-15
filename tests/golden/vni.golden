@@ -31,3 +31,8 @@ VN031 vni spell_check=false "tieng1 " => "tiéng "
 VN028 vni "tie6ng1 " => "tiếng "
 VN029 vni "chao2{BS}{BS} " => "ch "
 VN030 vni "tie6ng1{ESC}" => "tie6ng1"
+
+# Regression: open `uơ` and `oeo`.
+VN900 vni "thuo73 " => "thuở "
+VN901 vni "khoeo2 " => "khoèo "
+VN902 vni "thu7o7ng " => "thương "

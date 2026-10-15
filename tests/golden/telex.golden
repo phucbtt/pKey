@@ -105,3 +105,12 @@ TX113 telex "abc{LBRACE}x " => "abc{x "
 
 # --- output form
 TX120 telex output=nfd "tieengs " => "tie\u{0302}\u{0301}ng "
+
+# Regression: open `uơ` (the `uow` shortcut first makes `ươ`) and `oeo` (the second o must not
+# become a circumflex on the first one).
+TX900 telex "thuowr " => "thuở "
+TX901 telex "huow " => "huơ "
+TX902 telex "khoeof " => "khoèo "
+TX903 telex "ngoeoj " => "ngoẹo "
+TX904 telex "huowu " => "hươu "
+TX905 telex "thuowng " => "thương "

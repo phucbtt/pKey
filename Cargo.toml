@@ -4,6 +4,13 @@ members = [
     "crates/ime-unicode",
     "crates/ime-vietnamese",
     "crates/ime-core",
+    "crates/ime-config",
+    "crates/ime-macro",
+    "crates/ime-runtime",
+    "crates/ime-ffi",
+    "crates/ime-winkeys",
+    "platform/windows-tsf",
+    "platform/windows-app",
     "crates/ime-testing",
     "apps/ime-cli",
 ]
@@ -13,6 +20,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.80"
 publish = false
+license = "MIT"
 
 [workspace.dependencies]
 bitflags = "2"
@@ -22,6 +30,11 @@ unicode-segmentation = "1"
 ime-unicode = { path = "crates/ime-unicode" }
 ime-vietnamese = { path = "crates/ime-vietnamese" }
 ime-core = { path = "crates/ime-core" }
+ime-config = { path = "crates/ime-config" }
+ime-macro = { path = "crates/ime-macro", default-features = false }
+ime-runtime = { path = "crates/ime-runtime" }
+ime-ffi = { path = "crates/ime-ffi" }
+ime-winkeys = { path = "crates/ime-winkeys" }
 ime-testing = { path = "crates/ime-testing" }
 
 [profile.release]
@@ -30,4 +43,13 @@ lto = "thin"
 codegen-units = 1
 panic = "unwind"
 debug = "line-tables-only"
+strip = "symbols"
+
+# The single-file release (`scripts/windows/build-portable.ps1`): small and without debug info.
+# `panic` stays "unwind" because the hooks use `catch_unwind` to never crash the host process.
+[profile.dist]
+inherits = "release"
+opt-level = "s"
+lto = "fat"
+debug = false
 strip = "symbols"

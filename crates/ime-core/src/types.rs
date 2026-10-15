@@ -64,6 +64,16 @@ bitflags! {
         const ALT_GR = 32;
     }
 
+    /// Keys that end a word and may expand a macro.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+    pub struct MacroDelimiters: u8 {
+        const SPACE = 1;
+        const ENTER = 2;
+        const TAB = 4;
+        /// Any other non-alphanumeric character (`.`, `,`, `)`, ...).
+        const PUNCTUATION = 8;
+    }
+
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
     pub struct KeyFlags: u8 {
         const REPEAT = 1;

@@ -20,6 +20,8 @@ pub(crate) struct Composition {
     literal: bool,
     /// The user used Backspace: raw keys no longer map one-to-one to the display.
     dirty: bool,
+    /// VIQR: the previous key was `\`, so the next one is typed literally.
+    escape: bool,
 }
 
 impl fmt::Debug for Composition {
@@ -36,9 +38,12 @@ pub(crate) fn accepts(ch: char, cfg: &EngineConfig, composing: bool) -> bool {
     match cfg.scheme {
         Scheme::Telex => cfg.telex_brackets && matches!(ch, '[' | ']'),
         Scheme::Vni => composing && ch.is_ascii_digit(),
-        Scheme::Viqr => false,
+        Scheme::Viqr => composing && (ch == '\\' || VIQR_MARKS.contains(&ch)),
     }
 }
+
+/// VIQR marks typed after the vowel: breve, circumflex, horn, then the five tones.
+const VIQR_MARKS: &[char] = &['(', '^', '+', '\'', '`', '?', '~', '.'];
 
 impl Composition {
     pub fn is_empty(&self) -> bool {
@@ -59,6 +64,11 @@ impl Composition {
 
     fn display_nfc(&self, cfg: &EngineConfig) -> String {
         ime_vietnamese::render(&self.letters, self.tone, cfg.tone_style)
+    }
+
+    /// What the user sees, always as NFC (macro triggers are written in NFC).
+    pub fn shown_nfc(&self, cfg: &EngineConfig) -> String {
+        self.display_nfc(cfg)
     }
 
     /// Text shown in the preedit, in the configured output form.
@@ -94,6 +104,19 @@ impl Composition {
         self.raw.push(ch);
         let upper = ch.is_ascii_uppercase();
         let key = ch.to_ascii_lowercase();
+        if cfg.scheme == Scheme::Viqr {
+            if self.escape {
+                self.escape = false;
+                self.letters.push(Letter::plain(key, upper));
+                return;
+            }
+            if ch == '\\' {
+                // The backslash itself is not shown, so the display no longer mirrors the raw keys.
+                self.escape = true;
+                self.dirty = true;
+                return;
+            }
+        }
         if !self.literal && self.apply(key, upper, cfg) {
             return;
         }
@@ -105,7 +128,22 @@ impl Composition {
         match cfg.scheme {
             Scheme::Telex => self.apply_telex(key, upper, cfg),
             Scheme::Vni => self.apply_vni(key, upper, cfg),
-            Scheme::Viqr => false,
+            Scheme::Viqr => self.apply_viqr(key, upper, cfg),
+        }
+    }
+
+    fn apply_viqr(&mut self, key: char, upper: bool, cfg: &EngineConfig) -> bool {
+        match key {
+            '\'' => self.try_tone(Tone::Sac, key, upper, cfg),
+            '`' => self.try_tone(Tone::Huyen, key, upper, cfg),
+            '?' => self.try_tone(Tone::Hoi, key, upper, cfg),
+            '~' => self.try_tone(Tone::Nga, key, upper, cfg),
+            '.' => self.try_tone(Tone::Nang, key, upper, cfg),
+            '^' => self.try_shape(&['a', 'e', 'o'], Shape::Circumflex, key, upper, cfg),
+            '(' => self.try_shape(&['a'], Shape::Breve, key, upper, cfg),
+            '+' => self.try_horn_smart(key, upper, &[('o', Shape::Horn), ('u', Shape::Horn)], cfg),
+            'd' => self.try_stroke(key, upper, cfg),
+            _ => false,
         }
     }
 

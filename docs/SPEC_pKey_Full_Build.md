@@ -1,13 +1,13 @@
-# VietIME Rust — Đặc tả xây dựng đầy đủ (Full Build Specification)
+# pKey Rust — Đặc tả xây dựng đầy đủ (Full Build Specification)
 
 | Thuộc tính | Giá trị |
 |---|---|
-| Phiên bản tài liệu | 2.0 (mở rộng từ `SPEC_VietIME_Rust_CrossPlatform.md` v1.0) |
+| Phiên bản tài liệu | 2.0 (mở rộng từ `SPEC_pKey_Rust_CrossPlatform.md` v1.0) |
 | Ngày | 2026-10-15 |
 | Trạng thái | Đặc tả triển khai; **chưa có code, chưa có POC, chưa có benchmark** |
 | Nền tảng đích | Windows 10 22H2+/11 (x64, x86 TIP, ARM64 sau), macOS 13+ (arm64, x86_64), Linux (IBus ≥ 1.5.26, Fcitx5 ≥ 5.0.21) |
 | Ngôn ngữ lõi | Rust stable (MSRV cố định trong `rust-toolchain.toml`, đề xuất 1.80+) |
-| Tài liệu gốc | [SPEC_VietIME_Rust_CrossPlatform.md](SPEC_VietIME_Rust_CrossPlatform.md) — mọi ràng buộc ở tài liệu gốc vẫn còn hiệu lực; tài liệu này bổ sung chi tiết |
+| Tài liệu gốc | [SPEC_pKey_Rust_CrossPlatform.md](SPEC_pKey_Rust_CrossPlatform.md) — mọi ràng buộc ở tài liệu gốc vẫn còn hiệu lực; tài liệu này bổ sung chi tiết |
 
 ---
 
@@ -45,7 +45,7 @@
 ## 1. Phạm vi sản phẩm
 
 ### 1.1 Mục tiêu
-VietIME là bộ gõ tiếng Việt offline-first, đa nền tảng, cung cấp:
+pKey là bộ gõ tiếng Việt offline-first, đa nền tảng, cung cấp:
 - Kiểu gõ Telex, VNI, VIQR; đầu ra Unicode NFC (mặc định) / NFD; v1.1 thêm TCVN3 (ABC), VNI Windows.
 - Đặt dấu kiểu mới/cũ, bỏ dấu tự do, kiểm tra chính tả, tự khôi phục từ sai.
 - Chuyển VI/EN bằng phím tắt, macro (gõ tắt), profile theo ứng dụng, game mode.
@@ -135,7 +135,7 @@ Mỗi feature có ID, ưu tiên, version và **tiêu chí chấp nhận (AC)** c
 - AC: Wizard phát hiện IME đã đăng ký/chọn hay chưa; UI phân biệt "Process đang chạy" và "IME đã được kích hoạt"; uninstaller xóa sạch đăng ký, giữ/hỏi config người dùng.
 
 ### F012 — Diagnostics/Doctor (P1, 1.0)
-- AC: `vietime doctor` và tab About/Doctor xuất báo cáo (OS, backend, version, capability, config đã redact); grep báo cáo không có bất kỳ chuỗi gõ thử nào.
+- AC: `pkey-cli doctor` và tab About/Doctor xuất báo cáo (OS, backend, version, capability, config đã redact); grep báo cáo không có bất kỳ chuỗi gõ thử nào.
 
 ### F013 — TCVN3 / VNI Windows (P2, 1.1)
 - AC: Bảng ánh xạ có nguồn kiểm chứng (2 nguồn độc lập), test round-trip; công cụ chuyển mã clipboard yêu cầu xác nhận.
@@ -215,9 +215,9 @@ Mọi số liệu hiệu năng PHẢI ghi kèm cấu hình máy/OS/CPU/backend. 
 | OS | Process engine chạy ở đâu | Số instance engine | Thread gọi engine |
 |---|---|---|---|
 | Windows (TSF) | **In-process** DLL được nạp vào *mỗi* host process có focus bàn phím | 1 `Engine` / host process, nhiều `Context` | Thread UI của host (STA) |
-| Windows (hook, 1.1) | Process `vietime-hook.exe` riêng của user | 1 | Thread hook riêng có message loop |
-| macOS (IMK) | Process input method `VietIME.app` (do macOS khởi chạy) | 1, nhiều client | Main thread |
-| Linux IBus | Process `ibus-engine-vietime` (do ibus-daemon spawn) | 1, nhiều engine object | GLib main loop |
+| Windows (hook, 1.1) | Process `pkey-hook.exe` riêng của user | 1 | Thread hook riêng có message loop |
+| macOS (IMK) | Process input method `pKey.app` (do macOS khởi chạy) | 1, nhiều client | Main thread |
+| Linux IBus | Process `ibus-engine-pkey` (do ibus-daemon spawn) | 1, nhiều engine object | GLib main loop |
 | Linux Fcitx5 | In-process addon `.so` trong `fcitx5` | 1 | Fcitx event loop |
 
 Hệ quả bắt buộc:
@@ -246,7 +246,7 @@ Hệ quả bắt buộc:
 ### 6.1 Cây thư mục
 
 ```text
-vietime/
+pkey/
 ├── Cargo.toml                    # [workspace], resolver = "2", profile settings
 ├── rust-toolchain.toml           # channel pinned, targets
 ├── deny.toml                     # cargo-deny: licenses, bans, advisories
@@ -259,19 +259,19 @@ vietime/
 │   ├── ime-unicode/
 │   ├── ime-macro/
 │   ├── ime-config/
-│   ├── ime-ffi/                  # cdylib + staticlib, cbindgen → include/vietime.h
+│   ├── ime-ffi/                  # cdylib + staticlib, cbindgen → include/pkey.h
 │   ├── ime-ipc/
 │   └── ime-testing/
 ├── platform/
-│   ├── windows-tsf/              # cdylib: VietIME.TSF.dll (x86, x64, arm64)
+│   ├── windows-tsf/              # cdylib: pKey.TSF.dll (x86, x64, arm64)
 │   ├── windows-hook/             # bin, feature-gated, off by default
 │   ├── macos-imk/                # Xcode/SwiftPM project + Rust staticlib
-│   ├── linux-ibus/               # bin ibus-engine-vietime (+ C shim)
-│   └── linux-fcitx5/             # CMake C++ addon linking libvietime_ffi.a
+│   ├── linux-ibus/               # bin ibus-engine-pkey (+ C shim)
+│   └── linux-fcitx5/             # CMake C++ addon linking libpkey_ffi.a
 ├── apps/
 │   ├── settings/                 # Slint
 │   ├── tray/                     # tray-icon + muda (Windows chính; Linux SNI tùy chọn)
-│   └── ime-cli/                  # bin `vietime`
+│   └── ime-cli/                  # bin `pkey-cli`
 ├── assets/
 │   ├── mappings/                 # telex.toml, vni.toml, viqr.toml, tcvn3.toml, vni_win.toml
 │   ├── icons/
@@ -756,7 +756,7 @@ Pass-through mọi phím, không tạo composition, không macro. Không chạm 
 
 Dùng cho macOS shim và Fcitx5 addon (và tùy chọn IBus C shim). Windows TSF và IBus Rust gọi `ime-core` trực tiếp.
 
-### 13.1 Header (sinh bằng cbindgen, `include/vietime.h`)
+### 13.1 Header (sinh bằng cbindgen, `include/pkey.h`)
 
 ```c
 #define VT_ABI_VERSION 1
@@ -836,10 +836,10 @@ void       vt_result_free(VtResult *r);
 
 ### 14.1 Windows — TSF Text Service (`platform/windows-tsf`)
 
-**Sản phẩm:** `VietIME.TSF.dll` (cdylib Rust dùng crate `windows`) — build x64 **và** x86 (ứng dụng 32-bit trên Windows 64-bit nạp TIP 32-bit); ARM64 (+ ARM64X/ARM64EC [VERIFY]) sau khi có máy test.
+**Sản phẩm:** `pKey.TSF.dll` (cdylib Rust dùng crate `windows`) — build x64 **và** x86 (ứng dụng 32-bit trên Windows 64-bit nạp TIP 32-bit); ARM64 (+ ARM64X/ARM64EC [VERIFY]) sau khi có máy test.
 
 **Đăng ký (trong installer, chạy `regsvr32` hoặc custom action gọi `DllRegisterServer`):**
-- COM: `HKLM\Software\Classes\CLSID\{CLSID_VietIME}\InprocServer32` = đường dẫn DLL, `ThreadingModel=Apartment`.
+- COM: `HKLM\Software\Classes\CLSID\{CLSID_pKey}\InprocServer32` = đường dẫn DLL, `ThreadingModel=Apartment`.
 - `ITfInputProcessorProfileMgr::RegisterProfile(CLSID, LANGID 0x042A (vi-VN), GUID_PROFILE, description, icon, …)`.
 - `ITfCategoryMgr::RegisterCategory` cho: `GUID_TFCAT_TIP_KEYBOARD`, `GUID_TFCAT_TIPCAP_IMMERSIVESUPPORT`, `GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT`, `GUID_TFCAT_TIPCAP_UIELEMENTENABLED`, `GUID_TFCAT_TIPCAP_SECUREMODE` (chỉ nếu đã kiểm chứng an toàn) [VERIFY], `GUID_TFCAT_DISPLAYATTRIBUTEPROVIDER`.
 - Không ghi registry để ép làm bàn phím mặc định; onboarding hướng dẫn người dùng thêm qua Settings › Time & language.
@@ -865,9 +865,9 @@ void       vt_result_free(VtResult *r);
 
 **Secure field:** đọc `GUID_PROP_INPUTSCOPE` / `ITfInputScope::GetInputScopes` chứa `IS_PASSWORD` ⇒ caps `SECURE_INPUT`.
 
-**AppContainer/UWP & ứng dụng low-integrity:** TIP chạy trong sandbox; DLL và file config snapshot PHẢI đọc được bởi `ALL APPLICATION PACKAGES` (SID `S-1-15-2-1`) và low integrity. Thiết kế: Settings ghi `%LOCALAPPDATA%\VietIME\runtime\config.snapshot` (bản rút gọn, không chứa macro? — macro cần ⇒ đưa vào snapshot), set ACL đọc cho `S-1-15-2-1`; TIP đọc file này, nếu thất bại dùng default compiled-in. **[VERIFY trong WIN-001]**; fallback: snapshot trong `HKCU\Software\VietIME\Runtime` (AppContainer có quyền đọc HKCU hạn chế [VERIFY]).
+**AppContainer/UWP & ứng dụng low-integrity:** TIP chạy trong sandbox; DLL và file config snapshot PHẢI đọc được bởi `ALL APPLICATION PACKAGES` (SID `S-1-15-2-1`) và low integrity. Thiết kế: Settings ghi `%LOCALAPPDATA%\pKey\runtime\config.snapshot` (bản rút gọn, không chứa macro? — macro cần ⇒ đưa vào snapshot), set ACL đọc cho `S-1-15-2-1`; TIP đọc file này, nếu thất bại dùng default compiled-in. **[VERIFY trong WIN-001]**; fallback: snapshot trong `HKCU\Software\pKey\Runtime` (AppContainer có quyền đọc HKCU hạn chế [VERIFY]).
 
-**Reload config trong TIP:** không tạo thread watcher trong mọi process. Mỗi lần `OnSetFocus`, TIP kiểm tra `generation` (8 byte đầu file snapshot hoặc named shared memory `Local\VietIME-Gen`) và reload nếu đổi — chi phí O(1).
+**Reload config trong TIP:** không tạo thread watcher trong mọi process. Mỗi lần `OnSetFocus`, TIP kiểm tra `generation` (8 byte đầu file snapshot hoặc named shared memory `Local\pKey-Gen`) và reload nếu đổi — chi phí O(1).
 
 **Ràng buộc nghiêm:** không `MessageBox`, không blocking I/O lớn trong callback; không `LoadLibrary` thêm DLL ngoài hệ thống; tất cả callback COM bọc `catch_unwind` → trả `S_OK`/`E_FAIL` thích hợp và fail-open (`*pfEaten = FALSE`).
 
@@ -876,22 +876,22 @@ void       vt_result_free(VtResult *r);
 **POC exit (WIN-001):** gõ `tieengs ` → `tiếng ` trong Notepad và Chrome; TIP x86 hoạt động trong ứng dụng 32-bit; không crash khi đổi focus nhanh 100 lần.
 
 ### 14.2 Windows — Hook fallback (`platform/windows-hook`, 1.1, opt-in)
-- `SetWindowsHookExW(WH_KEYBOARD_LL)` trong process `vietime-hook.exe` (per-user, medium IL), message loop riêng; callback chỉ enqueue và quyết định nhanh, tổng < 1 ms.
-- Output bằng `SendInput` với backspace + Unicode (`KEYEVENTF_UNICODE`); mọi input tổng hợp mang `dwExtraInfo = VIETIME_MAGIC` để bỏ qua khi quay lại hook (loop guard).
+- `SetWindowsHookExW(WH_KEYBOARD_LL)` trong process `pkey-hook.exe` (per-user, medium IL), message loop riêng; callback chỉ enqueue và quyết định nhanh, tổng < 1 ms.
+- Output bằng `SendInput` với backspace + Unicode (`KEYEVENTF_UNICODE`); mọi input tổng hợp mang `dwExtraInfo = PKEY_MAGIC` để bỏ qua khi quay lại hook (loop guard).
 - Chỉ bật cho app nằm trong danh sách được người dùng chọn; luôn tắt khi foreground là tiến trình nâng quyền (UIPI sẽ chặn) hoặc secure desktop.
 - Cảnh báo UI rõ: chế độ này dùng backspace giả, có thể sai với autocomplete.
 - Không cùng lúc với TIP trên cùng app (TIP active ⇒ hook pass-through).
 
 ### 14.3 macOS — InputMethodKit (`platform/macos-imk`)
 
-**Sản phẩm:** `VietIME.app` (bundle input method) cài vào `/Library/Input Methods/` (pkg) hoặc `~/Library/Input Methods/` (dev). Swift (hoặc ObjC) shim + `libvietime_ffi.a` (universal arm64+x86_64 bằng `lipo`).
+**Sản phẩm:** `pKey.app` (bundle input method) cài vào `/Library/Input Methods/` (pkg) hoặc `~/Library/Input Methods/` (dev). Swift (hoặc ObjC) shim + `libpkey_ffi.a` (universal arm64+x86_64 bằng `lipo`).
 
 **Info.plist (tối thiểu):**
 | Key | Giá trị |
 |---|---|
-| `CFBundleIdentifier` | `<reverse-dns>.inputmethod.VietIME` (TIS yêu cầu có `.inputmethod.` [VERIFY]) |
+| `CFBundleIdentifier` | `<reverse-dns>.inputmethod.pKey` (TIS yêu cầu có `.inputmethod.` [VERIFY]) |
 | `InputMethodConnectionName` | `<bundle id>_Connection` |
-| `InputMethodServerControllerClass` | `VietIMEInputController` |
+| `InputMethodServerControllerClass` | `pKeyInputController` |
 | `InputMethodServerDelegateClass` | (tùy chọn) |
 | `LSBackgroundOnly` | `YES` |
 | `TISInputSourceID` | `<bundle id>` |
@@ -918,7 +918,7 @@ void       vt_result_free(VtResult *r);
 
 **Secure input:** khi Secure Event Input bật, macOS không giao phím cho IME bên thứ ba thông thường — engine không cần xử lý; ghi nhận trong doctor qua `IsSecureEventInputEnabled()`.
 
-**Config & state:** một process duy nhất ⇒ dùng `FSEvents`/`DispatchSource` watch thư mục config; VI/EN global nằm trong process. Settings app riêng (`VietIME Settings.app`) ghi config; nút "Bật lại input method" gửi `NSDistributedNotificationCenter` notification `…VietIME.reload` (không mang dữ liệu gõ).
+**Config & state:** một process duy nhất ⇒ dùng `FSEvents`/`DispatchSource` watch thư mục config; VI/EN global nằm trong process. Settings app riêng (`pKey Settings.app`) ghi config; nút "Bật lại input method" gửi `NSDistributedNotificationCenter` notification `…pKey.reload` (không mang dữ liệu gõ).
 
 **Ký & notarize:** Developer ID Application + Installer, hardened runtime, notarization, staple. Không yêu cầu Accessibility/Input Monitoring cho đường IMK.
 
@@ -928,28 +928,28 @@ void       vt_result_free(VtResult *r);
 
 ### 14.4 Linux — IBus (`platform/linux-ibus`)
 
-**Lựa chọn ADR-004 (đề xuất):** binary Rust `ibus-engine-vietime` + **C shim nhỏ** subclass `IBusEngine` bằng libibus (GObject), gọi vào Rust qua C ABI. Phương án thay thế: thuần Rust qua `zbus` cài đặt giao diện `org.freedesktop.IBus.Engine` trên bus riêng của IBus — ít phụ thuộc C nhưng phải tự serialize `IBusText` variant; quyết định sau POC LIN-001.
+**Lựa chọn ADR-004 (đề xuất):** binary Rust `ibus-engine-pkey` + **C shim nhỏ** subclass `IBusEngine` bằng libibus (GObject), gọi vào Rust qua C ABI. Phương án thay thế: thuần Rust qua `zbus` cài đặt giao diện `org.freedesktop.IBus.Engine` trên bus riêng của IBus — ít phụ thuộc C nhưng phải tự serialize `IBusText` variant; quyết định sau POC LIN-001.
 
-**Component XML** `/usr/share/ibus/component/vietime.xml`:
+**Component XML** `/usr/share/ibus/component/pkey.xml`:
 ```xml
 <component>
-  <name>org.vietime.IBus.VietIME</name>
-  <description>VietIME Vietnamese Input Method</description>
-  <exec>/usr/libexec/ibus-engine-vietime --ibus</exec>
+  <name>org.pkey.IBus.pKey</name>
+  <description>pKey Vietnamese Input Method</description>
+  <exec>/usr/libexec/ibus-engine-pkey --ibus</exec>
   <version>1.0.0</version>
   <license>(license dự án)</license>
-  <textdomain>vietime</textdomain>
+  <textdomain>pkey</textdomain>
   <engines>
     <engine>
-      <name>vietime</name>
+      <name>pkey</name>
       <language>vi</language>
       <license>(license dự án)</license>
-      <longname>VietIME</longname>
+      <longname>pKey</longname>
       <description>Telex/VNI/VIQR</description>
-      <icon>/usr/share/vietime/icons/vietime.svg</icon>
+      <icon>/usr/share/pkey/icons/pkey.svg</icon>
       <layout>default</layout>
       <rank>50</rank>
-      <setup>/usr/bin/vietime-settings</setup>
+      <setup>/usr/bin/pkey-settings</setup>
     </engine>
   </engines>
 </component>
@@ -977,29 +977,29 @@ void       vt_result_free(VtResult *r);
 
 ### 14.5 Linux — Fcitx5 (`platform/linux-fcitx5`)
 
-**Sản phẩm:** `vietime.so` (C++17, CMake, `Fcitx5::Core`) link tĩnh `libvietime_ffi.a`.
+**Sản phẩm:** `pkey.so` (C++17, CMake, `Fcitx5::Core`) link tĩnh `libpkey_ffi.a`.
 
 **Files:**
-- `/usr/lib/$(arch)/fcitx5/vietime.so`
-- `/usr/share/fcitx5/addon/vietime.conf`:
+- `/usr/lib/$(arch)/fcitx5/pkey.so`
+- `/usr/share/fcitx5/addon/pkey.conf`:
   ```ini
   [Addon]
-  Name=VietIME
+  Name=pKey
   Category=InputMethod
   Version=1.0.0
-  Library=vietime
+  Library=pkey
   Type=SharedLibrary
   OnDemand=True
   Configurable=True
   ```
-- `/usr/share/fcitx5/inputmethod/vietime.conf`:
+- `/usr/share/fcitx5/inputmethod/pkey.conf`:
   ```ini
   [InputMethod]
-  Name=VietIME
-  Icon=vietime
+  Name=pKey
+  Icon=pkey
   Label=VI
   LangCode=vi
-  Addon=vietime
+  Addon=pkey
   Configurable=True
   ```
 
@@ -1009,7 +1009,7 @@ void       vt_result_free(VtResult *r);
 | `keyEvent(entry, KeyEvent&)` | `keyEvent.key().sym()` → `Key::keySymToUnicode`; `isRelease()` → `KEY_UP`; consumed ⇒ `keyEvent.filterAndAccept()` |
 | `activate` / `deactivate` | `FocusIn` / `FocusOut` |
 | `reset` | `Reset` |
-| Per-IC state | `FactoryFor<VietImeState>` property, giữ `VtContextId` |
+| Per-IC state | `FactoryFor<PKeyState>` property, giữ `VtContextId` |
 | `ic->capabilityFlags()` | `Preedit`, `Password`, `SurroundingText`, `Sensitive`… |
 | `ic->program()` | app identity |
 
@@ -1043,12 +1043,12 @@ void       vt_result_free(VtResult *r);
 ### 15.2 State bus theo OS
 | OS | Cơ chế đề xuất | Ghi chú |
 |---|---|---|
-| Windows | TSF global compartment `GUID_COMPARTMENT_KEYBOARD_OPENCLOSE` cho VI/EN (TIP đọc/ghi qua `ITfThreadMgr::GetGlobalCompartment`); tray đọc trạng thái qua named shared memory `Local\VietIME-State` do TIP cập nhật | [VERIFY] AppContainer ghi được shared memory hay không; nếu không, tray chỉ hiển thị mode theo hotkey của chính nó |
+| Windows | TSF global compartment `GUID_COMPARTMENT_KEYBOARD_OPENCLOSE` cho VI/EN (TIP đọc/ghi qua `ITfThreadMgr::GetGlobalCompartment`); tray đọc trạng thái qua named shared memory `Local\pKey-State` do TIP cập nhật | [VERIFY] AppContainer ghi được shared memory hay không; nếu không, tray chỉ hiển thị mode theo hotkey của chính nó |
 | macOS | Trong process IMK; Settings ↔ IMK qua `NSDistributedNotificationCenter` (chỉ tên lệnh) | |
 | Linux | Trong process IBus/Fcitx; Settings ↔ engine qua file watch; Fcitx5 có thể dùng D-Bus addon riêng (tùy chọn) | |
 
 ### 15.3 IPC message (settings/tray/cli ↔ coordinator)
-- Transport: Windows named pipe `\\.\pipe\vietime-<user SID>` với DACL chỉ user hiện tại; Unix domain socket `$XDG_RUNTIME_DIR/vietime.sock` (0600) / `~/Library/Application Support/VietIME/run/vietime.sock`.
+- Transport: Windows named pipe `\\.\pipe\pkey-<user SID>` với DACL chỉ user hiện tại; Unix domain socket `$XDG_RUNTIME_DIR/pkey.sock` (0600) / `~/Library/Application Support/pKey/run/pkey.sock`.
 - Framing: length-prefixed (u32 LE) JSON, tối đa 64 KiB/message.
 - Envelope: `{ "v": 1, "id": 42, "type": "...", "payload": {...} }`.
 - Messages v1: `Hello{client, version}`, `GetStatus` → `Status{mode, scheme, backend, ime_registered, ime_selected, paused_until}`, `SetMode{mode}`, `ReloadConfig`, `Pause{minutes}`, `DoctorReport` → báo cáo đã redact.
@@ -1062,9 +1062,9 @@ void       vt_result_free(VtResult *r);
 ### 16.1 Vị trí
 | OS | Config | Runtime |
 |---|---|---|
-| Windows | `%APPDATA%\VietIME\config.toml`, `macros.json` | `%LOCALAPPDATA%\VietIME\runtime\` (snapshot cho TIP, state.json, logs) |
-| macOS | `~/Library/Application Support/VietIME/` | `~/Library/Caches/VietIME/`, logs `~/Library/Logs/VietIME/` |
-| Linux | `$XDG_CONFIG_HOME/vietime/` (mặc định `~/.config/vietime/`) | `$XDG_STATE_HOME/vietime/` (logs, state.json), socket ở `$XDG_RUNTIME_DIR` |
+| Windows | `%APPDATA%\pKey\config.toml`, `macros.json` | `%LOCALAPPDATA%\pKey\runtime\` (snapshot cho TIP, state.json, logs) |
+| macOS | `~/Library/Application Support/pKey/` | `~/Library/Caches/pKey/`, logs `~/Library/Logs/pKey/` |
+| Linux | `$XDG_CONFIG_HOME/pkey/` (mặc định `~/.config/pkey/`) | `$XDG_STATE_HOME/pkey/` (logs, state.json), socket ở `$XDG_RUNTIME_DIR` |
 
 ### 16.2 Schema đầy đủ v1 (giá trị = mặc định)
 
@@ -1154,8 +1154,8 @@ game_mode = false
 ## 17. UI/UX
 
 ### 17.1 Công nghệ
-- Settings: Slint (Rust), cửa sổ đơn, process riêng `vietime-settings`.
-- Tray: Windows dùng `tray-icon` + `muda` trong `vietime-tray.exe` (autostart per-user). macOS: menu của IMK (biểu tượng input menu) — không cần tray riêng. Linux: indicator của IBus/Fcitx5 (properties/status area); tray SNI riêng là tùy chọn.
+- Settings: Slint (Rust), cửa sổ đơn, process riêng `pkey-settings`.
+- Tray: Windows dùng `tray-icon` + `muda` trong `pkey-tray.exe` (autostart per-user). macOS: menu của IMK (biểu tượng input menu) — không cần tray riêng. Linux: indicator của IBus/Fcitx5 (properties/status area); tray SNI riêng là tùy chọn.
 - i18n: Fluent (`fluent-bundle`), file `assets/i18n/{vi,en}.ftl`.
 - Icon: trạng thái VI/EN dạng chữ "V"/"E" (light/dark/high-contrast), tự thiết kế, không dùng icon EVKey.
 
@@ -1179,7 +1179,7 @@ game_mode = false
 2. Chọn kiểu gõ (Telex/VNI/VIQR) với ví dụ.
 3. Kích hoạt IME theo OS — phát hiện trạng thái thật:
    - Windows: kiểm tra profile đã enable trong `ITfInputProcessorProfileMgr`; nút mở `ms-settings:regionlanguage`.
-   - macOS: `TISCreateInputSourceList` tìm input source; hướng dẫn System Settings › Keyboard › Input Sources › + › Vietnamese › VietIME; nút `TISEnableInputSource` nếu được phép [VERIFY].
+   - macOS: `TISCreateInputSourceList` tìm input source; hướng dẫn System Settings › Keyboard › Input Sources › + › Vietnamese › pKey; nút `TISEnableInputSource` nếu được phép [VERIFY].
    - Linux: phát hiện framework đang chạy (`ibus-daemon` / `fcitx5`, biến `GTK_IM_MODULE`, `QT_IM_MODULE`, `XMODIFIERS`, session Wayland/X11); hướng dẫn `ibus-setup` hoặc `fcitx5-configtool`; cảnh báo cấu hình env thiếu.
 4. Gõ thử: người dùng gõ "Tiếng Việt" vào ô test; UI chỉ kiểm tra *kết quả có khớp* rồi xóa ô.
 5. Đặt hotkey → Hoàn tất.
@@ -1191,17 +1191,17 @@ Không bao giờ hiển thị "Đang hoạt động" khi bước 3 chưa xác nh
 
 ---
 
-## 18. CLI (`apps/ime-cli`, binary `vietime`)
+## 18. CLI (`apps/ime-cli`, binary `pkey-cli`)
 
 ```text
-vietime simulate --scheme telex [--tone-style modern] [--nfd] "tieengs vieejt"
+pkey-cli simulate --scheme telex [--tone-style modern] [--nfd] "tieengs vieejt"
         # chạy engine với fake host, in kết quả + chuỗi action (dev tool, không đọc stdin ngầm)
-vietime golden run [--filter TX] [tests/golden/*.yaml]
-vietime config path | show | validate [file] | migrate [file] | reset
-vietime macro list | import <file> [--dry-run] | export <file> [--format json|csv]
-vietime doctor [--json]          # OS, backend, đăng ký IME, framework env, version, config redacted
-vietime status | mode vi|en      # qua IPC
-vietime convert --from unicode --to tcvn3 <file>   (1.1)
+pkey-cli golden run [--filter TX] [tests/golden/*.yaml]
+pkey-cli config path | show | validate [file] | migrate [file] | reset
+pkey macro list | import <file> [--dry-run] | export <file> [--format json|csv]
+pkey-cli doctor [--json]          # OS, backend, đăng ký IME, framework env, version, config redacted
+pkey status | mode vi|en      # qua IPC
+pkey convert --from unicode --to tcvn3 <file>   (1.1)
 ```
 Exit codes: 0 OK, 1 lỗi người dùng, 2 lỗi cấu hình, 3 không kết nối IPC, 70 lỗi nội bộ.
 
@@ -1245,7 +1245,7 @@ Exit codes: 0 OK, 1 lỗi người dùng, 2 lỗi cấu hình, 3 không kết n�
 - Hot path `process`: không cấp phát heap cho từ ≤ 16 ký tự (`SmallVec`), bảng vần là `phf`, render NFC bằng bảng tra.
 - Benchmarks (`crates/ime-testing/benches`): `process_key_telex`, `process_word_100`, `tone_position`, `render_nfc`, `macro_lookup_10k`.
 - CI chạy bench ở chế độ so sánh (không fail theo ngưỡng tuyệt đối trên runner chia sẻ; cảnh báo nếu chậm > 20% so với baseline).
-- Đo E2E: adapter ghi timestamp monotonic vào/ra (không text) khi bật env `VIETIME_TRACE_LATENCY=1`.
+- Đo E2E: adapter ghi timestamp monotonic vào/ra (không text) khi bật env `PKEY_TRACE_LATENCY=1`.
 - Kết quả đo ghi vào `docs/perf/<date>-<machine>.md` kèm cấu hình máy.
 
 ---
@@ -1317,21 +1317,21 @@ Tự động hóa (best-effort): Windows — WinAppDriver/UIAutomation + `SendIn
 ## 24. Đóng gói & cài đặt
 
 ### 24.1 Windows
-- Installer: WiX v4 MSI (per-machine) — chứa `VietIME.TSF.dll` (x64 vào `Program Files\VietIME\x64\`, x86 vào `Program Files\VietIME\x86\` hoặc `Program Files (x86)`), `vietime-tray.exe`, `vietime-settings.exe`, `vietime.exe`.
+- Installer: WiX v4 MSI (per-machine) — chứa `pKey.TSF.dll` (x64 vào `Program Files\pKey\x64\`, x86 vào `Program Files\pKey\x86\` hoặc `Program Files (x86)`), `pkey-tray.exe`, `pkey-settings.exe`, `pkey.exe`.
 - Custom action: đăng ký COM/TIP cho cả hai kiến trúc; set ACL đọc cho `ALL APPLICATION PACKAGES` trên thư mục cài.
 - Autostart tray: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (do app ghi khi người dùng bật, không phải installer ép).
 - Gỡ cài: unregister TIP (profile + category + COM), xóa file; hỏi xóa config. DLL đang bị nạp trong process khác ⇒ đánh dấu xóa sau reboot (`MoveFileEx` delay) và thông báo.
-- Nâng cấp: MSI major upgrade; DLL đang khóa ⇒ cài DLL tên có version (`VietIME.TSF.1.2.0.dll`) và cập nhật đường dẫn COM [VERIFY phương án tránh reboot].
+- Nâng cấp: MSI major upgrade; DLL đang khóa ⇒ cài DLL tên có version (`pKey.TSF.1.2.0.dll`) và cập nhật đường dẫn COM [VERIFY phương án tránh reboot].
 - Ký: Authenticode (EV hoặc OV), timestamp.
 
 ### 24.2 macOS
-- `.pkg` (productbuild) cài `VietIME.app` vào `/Library/Input Methods/` và `VietIME Settings.app` vào `/Applications/`.
+- `.pkg` (productbuild) cài `pKey.app` vào `/Library/Input Methods/` và `pKey Settings.app` vào `/Applications/`.
 - Postinstall: không tự enable input source mà không có hành động người dùng; mở Settings onboarding.
 - Gỡ: script `uninstall.sh` + nút trong Settings (yêu cầu quyền admin cho `/Library`), xóa input source khỏi TIS, hỏi xóa config.
 - Ký + notarize + staple; universal binary.
 
 ### 24.3 Linux
-- Gói: `vietime-common` (core lib, assets, CLI), `vietime-ibus`, `vietime-fcitx5`, `vietime-settings`. Định dạng `.deb` (Ubuntu 22.04/24.04, Debian 12) và `.rpm` (Fedora hiện hành); Arch PKGBUILD cộng đồng (tùy chọn).
+- Gói: `pkey-common` (core lib, assets, CLI), `pkey-ibus`, `pkey-fcitx5`, `pkey-settings`. Định dạng `.deb` (Ubuntu 22.04/24.04, Debian 12) và `.rpm` (Fedora hiện hành); Arch PKGBUILD cộng đồng (tùy chọn).
 - Post-install: IBus — `ibus write-cache`/hướng dẫn `ibus restart`; Fcitx5 — hướng dẫn restart fcitx5.
 - Không sửa `/etc/environment` tự động; doctor phát hiện thiếu `GTK_IM_MODULE`/`QT_IM_MODULE`/`XMODIFIERS` và hướng dẫn.
 - Flatpak/AppImage chỉ cho Settings, không cho engine.
@@ -1342,7 +1342,7 @@ SemVer; kênh `stable`/`beta`; changelog (Keep a Changelog); SHA-256 checksums +
 ---
 
 ## 25. Cập nhật (F015, 1.1)
-- `vietime-updater` process riêng, chạy khi người dùng bấm "Kiểm tra" hoặc theo lịch nếu `check_automatically=true`.
+- `pkey-updater` process riêng, chạy khi người dùng bấm "Kiểm tra" hoặc theo lịch nếu `check_automatically=true`.
 - Manifest JSON `{version, channel, min_os, artifacts:[{os, arch, url, sha256, size}], notes_url}` ký Ed25519; public key nhúng trong binary; từ chối downgrade trừ rollback chủ động.
 - Tải về thư mục tạm user, kiểm hash + chữ ký OS (Authenticode / codesign) trước khi chạy installer.
 - Rollback: giữ installer bản trước; nút "Quay lại phiên bản trước".
@@ -1389,7 +1389,7 @@ Kế hoạch chi tiết (work package, ước lượng pd, gate, lịch ví dụ
 | CORE-009 | `ime-macro` | CORE-002 | P1 |
 | CORE-010 | `ime-ffi` + cbindgen + C harness | CORE-006 | P1 |
 | CORE-011 | `ime-testing`: FakeHost, golden runner, proptest, fuzz | CORE-006 | P1 |
-| CLI-001 | `vietime simulate/golden/config` | CORE-011 | P1 |
+| CLI-001 | `pkey-cli simulate/golden/config` | CORE-011 | P1 |
 | WIN-002 | TSF đầy đủ: composition, display attribute, lang bar, compartment | WIN-001, CORE-006 | P2 |
 | WIN-003 | Config snapshot + AppContainer ACL + reload | WIN-002, CORE-008 | P2 |
 | MAC-002 | IMK đầy đủ: marked text, menu, reload | MAC-001, CORE-010 | P3 |
@@ -1556,7 +1556,7 @@ Ghi chú TX024: tone thuộc âm tiết, không thuộc vị trí phím ⇒ gõ 
 Ký tự (`text`) lấy từ: Windows `ToUnicodeEx` với layout hiện tại (không làm hỏng dead-key state [VERIFY]: dùng flag `0x4` trên Windows 10 1607+), macOS `[event characters]`, IBus keyval → unicode, Fcitx5 `Key::keySymToUnicode`.
 
 ## Phụ lục D — Tài liệu tham khảo
-- Spec gốc: [SPEC_VietIME_Rust_CrossPlatform.md](SPEC_VietIME_Rust_CrossPlatform.md) §17
+- Spec gốc: [SPEC_pKey_Rust_CrossPlatform.md](SPEC_pKey_Rust_CrossPlatform.md) §17
 - Microsoft TSF: https://learn.microsoft.com/en-us/windows/win32/tsf/text-services-framework
 - Microsoft IME requirements: https://learn.microsoft.com/en-us/windows/apps/develop/input/input-method-editor-requirements
 - Microsoft SendInput / UIPI: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput

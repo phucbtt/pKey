@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 ime-core.workspace = true
 ime-unicode.workspace = true
+ime-vietnamese.workspace = true
+
+[dev-dependencies]
+proptest = "1"

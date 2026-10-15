@@ -131,24 +131,21 @@ pub enum Validity {
     Invalid,
 }
 
-fn strip_shape(s: &str) -> String {
-    s.chars()
-        .map(|c| match c {
-            'ă' | 'â' => 'a',
-            'ê' => 'e',
-            'ô' | 'ơ' => 'o',
-            'ư' => 'u',
-            'đ' => 'd',
-            c => c,
-        })
-        .collect()
-}
-
 const ONSETS: &[&str] = &[
     "", "b", "c", "ch", "d", "đ", "g", "gh", "gi", "h", "k", "kh", "l", "m", "n", "ng", "ngh",
     "nh", "p", "ph", "qu", "r", "s", "t", "th", "tr", "v", "x",
 ];
 const FOREIGN_ONSETS: &[&str] = &["f", "j", "w", "z"];
+
+/// Every accepted onset (empty string included). For generators and tools.
+pub fn onsets() -> &'static [&'static str] {
+    ONSETS
+}
+
+/// Every vowel cluster with the final consonants it may take (`""` = open syllable).
+pub fn rhymes() -> &'static [(&'static str, &'static [&'static str])] {
+    rhymes::RHYMES
+}
 
 fn onset_valid(onset: &str, foreign: bool) -> bool {
     ONSETS.contains(&onset) || (foreign && FOREIGN_ONSETS.contains(&onset))
@@ -188,6 +185,10 @@ pub fn validity(letters: &[Letter], tone: Tone, foreign_onsets: bool) -> Validit
         nucleus = "iê".to_string();
     }
     let coda = text(a.nuc_end..letters.len());
+    // `ươ` cannot end a syllable, but `uơ` can (thuở, huơ): typing `uow` / `uo7` makes `ươ` first.
+    if nucleus == "ươ" && coda.is_empty() {
+        nucleus = "uơ".to_string();
+    }
 
     if !a.has_nucleus() {
         if !coda.is_empty() {
@@ -258,11 +259,24 @@ pub fn render(letters: &[Letter], tone: Tone, style: ToneStyle) -> String {
     } else {
         tone_index(letters, style)
     };
+    // An open `ươ` is shown as `uơ` (see `validity`).
+    let a = analyze(letters);
+    let open_uo = a.nuc_end == letters.len()
+        && a.nuc_end - a.nuc_start == 2
+        && letters[a.nuc_start].ch == 'u'
+        && letters[a.nuc_start].shape == Shape::Horn
+        && letters[a.nuc_start + 1].ch == 'o'
+        && letters[a.nuc_start + 1].shape == Shape::Horn;
     let mut s = String::with_capacity(letters.len() * 2);
     for (i, l) in letters.iter().enumerate() {
         if l.ch.is_ascii_alphabetic() {
             let t = if Some(i) == ti { tone } else { Tone::None };
-            s.push_str(&compose_char(l.ch, l.upper, l.shape, t));
+            let shape = if open_uo && i == a.nuc_start {
+                Shape::None
+            } else {
+                l.shape
+            };
+            s.push_str(&compose_char(l.ch, l.upper, shape, t));
         } else {
             s.push(l.ch);
         }
@@ -331,7 +345,7 @@ mod tests {
     #[test]
     fn valid_syllables() {
         for w in [
-            "tiêng", "đăng", "cây", "người", "tuôi", "rươu", "quôc", "gia", "gi", "gin", "hoa",
+            "tiêng", "đăng", "cây", "ngươi", "tuôi", "rươu", "quôc", "gia", "gi", "gin", "hoa",
             "thuy", "khuyên", "xoăn", "quơ", "đi", "nghi", "nghiêng", "kim", "ghe", "yêu", "uông",
             "chao", "xin", "ăn", "nhiêu", "hoang", "khuya", "quy", "quân", "giư", "giêng",
         ] {

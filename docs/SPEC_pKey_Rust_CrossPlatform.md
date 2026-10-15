@@ -1,4 +1,4 @@
-# SPEC — VietIME Rust: Bộ gõ tiếng Việt đa nền tảng
+# SPEC — pKey Rust: Bộ gõ tiếng Việt đa nền tảng
 
 **Version:** 1.0 | **Ngày:** 2026-10-15 | **Trạng thái:** Đặc tả đề xuất; chưa triển khai/benchmark  
 **Đích:** Windows, macOS, Linux | **Ngôn ngữ lõi:** Rust stable  
@@ -8,7 +8,7 @@
 
 ## 1. Tổng quan sản phẩm
 
-**Tên làm việc:** VietIME Rust. **Loại:** desktop Vietnamese Input Method Editor (IME), offline-first. **Mục tiêu:** gõ Telex/VNI/VIQR, Unicode NFC/NFD, gõ dấu cũ/mới, chuyển Việt–Anh, macro, profiles theo ứng dụng, tray/menu, tự khởi động và trải nghiệm ổn định. Có thể mở rộng các bảng mã cũ TCVN3, VNI Windows.
+**Tên làm việc:** pKey Rust. **Loại:** desktop Vietnamese Input Method Editor (IME), offline-first. **Mục tiêu:** gõ Telex/VNI/VIQR, Unicode NFC/NFD, gõ dấu cũ/mới, chuyển Việt–Anh, macro, profiles theo ứng dụng, tray/menu, tự khởi động và trải nghiệm ổn định. Có thể mở rộng các bảng mã cũ TCVN3, VNI Windows.
 
 Nguyên tắc: (1) dùng chung thuật toán Rust; (2) mỗi OS dùng **native input method adapter**; (3) IME engine hoạt động dù Settings UI đóng; (4) không ghi nội dung người dùng gõ, không truyền dữ liệu gõ lên mạng; (5) không giả định có thể hook/phát lại keystroke trên mọi ứng dụng/Wayland/secure field; (6) fail-open khi adapter bị lỗi, không xóa ngoài composition.
 
@@ -58,7 +58,7 @@ Nguyên tắc: (1) dùng chung thuật toán Rust; (2) mỗi OS dùng **native i
 ## 4. Rust workspace
 
 ```text
-vietime/
+pkey/
 ├── Cargo.toml
 ├── crates/
 │   ├── ime-core/          # state machine, normalized events, capabilities
@@ -251,7 +251,7 @@ mode = "en"
 macros_enabled = false
 ```
 
-Lưu trong `%APPDATA%\VietIME\`, `~/Library/Application Support/VietIME/`, `$XDG_CONFIG_HOME/vietime/` (hoặc `~/.config/vietime/`). Atomic write, schema migration, backup, corruption recovery. Settings ↔ engine qua IPC **local same-user** có ACL; không chuyển composition text qua IPC/log.
+Lưu trong `%APPDATA%\pKey\`, `~/Library/Application Support/pKey/`, `$XDG_CONFIG_HOME/pkey/` (hoặc `~/.config/pkey/`). Atomic write, schema migration, backup, corruption recovery. Settings ↔ engine qua IPC **local same-user** có ACL; không chuyển composition text qua IPC/log.
 
 ## 10. Bảo mật và quyền riêng tư
 
@@ -320,7 +320,7 @@ Record test state as `PASS`, `LIMITED`, `FAIL`, `NOT_TESTED`; lưu phiên OS, ap
 - GitHub Actions matrix: `fmt`, `clippy -D warnings`, unit/integration for core, audit/license/SBOM, build Windows/macOS/Linux. Native E2E trên runner/sandbox tương ứng; self-hosted khi cần GUI session.
 - **Windows:** MSI/WiX hoặc NSIS + TSF DLL/COM profile registration, code signing; cài/gỡ/update sạch; kiểm tra x64 trước ARM64.
 - **macOS:** input method `.app`/`.pkg`, signing/notarization, first-run guide; build Intel/Apple Silicon; hướng dẫn chọn input source. Không phát hành app UI thông thường rồi coi là IME đã được cài.
-- **Linux:** package `.deb`/`.rpm`, tách `vietime-ibus`, `vietime-fcitx5`, `vietime-settings`; đăng ký component/addon; test upgrade/uninstall không phá config người dùng. AppImage chỉ phù hợp GUI helper, không thay thế package IME native.
+- **Linux:** package `.deb`/`.rpm`, tách `pkey-ibus`, `pkey-fcitx5`, `pkey-settings`; đăng ký component/addon; test upgrade/uninstall không phá config người dùng. AppImage chỉ phù hợp GUI helper, không thay thế package IME native.
 - Signed artifacts + checksums, GitHub Release stable/beta, changelog, rollback, docs cho từng OS.
 
 ## 14. Roadmap, milestones, Definition of Done
@@ -358,7 +358,7 @@ Record test state as `PASS`, `LIMITED`, `FAIL`, `NOT_TESTED`; lưu phiên OS, ap
 ## 15. Prompt triển khai cho Codex
 
 ```text
-Act as the lead Rust systems engineer of VietIME, a clean-room Vietnamese
+Act as the lead Rust systems engineer of pKey, a clean-room Vietnamese
 input method for Windows, macOS and Linux. Read this SPEC in full and create
 an implementation plan before changing code. Do not copy EVKey's binaries,
 branding, or unlicensed implementation.

@@ -1,0 +1,46 @@
+# VIQR golden cases. Marks are typed after the vowel: ( ^ + for shapes, ' ` ? ~ . for tones, dd for đ.
+# A backslash makes the next key literal.
+
+VQ001 viqr "tie^'ng " => "tiếng "
+VQ002 viqr "Vie^.t " => "Việt "
+VQ003 viqr "ddi " => "đi "
+VQ004 viqr "Ddi " => "Đi "
+VQ005 viqr "DDi " => "Đi "
+VQ006 viqr "Ngu+o+`i " => "Người "
+VQ007 viqr "tru+o+`ng " => "trường "
+VQ008 viqr "xoa(n " => "xoăn "
+VQ009 viqr "Ha` " => "Hà "
+VQ010 viqr "hoa` " => "hoà "
+VQ011 viqr tone_style=traditional "hoa` " => "hòa "
+VQ012 viqr "ca^y " => "cây "
+VQ013 viqr "to^i " => "tôi "
+VQ014 viqr "chu' " => "chú "
+VQ015 viqr "gi` " => "gì "
+VQ016 viqr "gia' " => "giá "
+VQ017 viqr "qua^n " => "quân "
+VQ018 viqr "ru+o+.u " => "rượu "
+VQ019 viqr "me~ " => "mẽ "
+VQ020 viqr "ba? " => "bả "
+VQ021 viqr "dda(ng " => "đăng "
+VQ022 viqr "No^.i " => "Nội "
+
+# Escape: the backslash is consumed and the next key is a plain character.
+VQ030 viqr "xin chao\\. " => "xin chao. "
+VQ031 viqr "a\\^ " => "a^ "
+VQ032 viqr "ca\\'y " => "ca'y "
+
+# Pressing a mark twice undoes it.
+VQ040 viqr "a'' " => "a' "
+VQ041 viqr "a^^ " => "a^ "
+
+# Marks outside a word are ordinary characters.
+VQ050 viqr "' " => "' "
+VQ051 viqr "'a " => "'a "
+VQ052 viqr "(ab) " => "(ab) "
+VQ053 viqr "mp3 " => "mp3 "
+
+# Text that is not Vietnamese keeps its punctuation (the word is restored).
+VQ060 viqr "hello. " => "hello. "
+VQ061 viqr "windows? " => "windows? "
+VQ062 viqr "{ESC}" => ""
+VQ063 viqr "ca^y{ESC}" => "ca^y"

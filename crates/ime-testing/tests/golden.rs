@@ -78,6 +78,14 @@ fn random_scripts_keep_host_contract() {
         "6",
         "7",
         "9",
+        "'",
+        "(",
+        "^",
+        "+",
+        "~",
+        "?",
+        "`",
+        "\\",
         " ",
         ".",
         ",",
@@ -97,18 +105,18 @@ fn random_scripts_keep_host_contract() {
         seed ^= seed >> 27;
         seed.wrapping_mul(0x2545_F491_4F6C_DD1D)
     };
-    for scheme_vni in [false, true] {
+    for scheme in [
+        ime_core::Scheme::Telex,
+        ime_core::Scheme::Vni,
+        ime_core::Scheme::Viqr,
+    ] {
         for _ in 0..3000 {
             let len = (next() % 40) as usize;
             let script: String = (0..len)
                 .map(|_| TOKENS[(next() % TOKENS.len() as u64) as usize])
                 .collect();
             let cfg = EngineConfig {
-                scheme: if scheme_vni {
-                    ime_core::Scheme::Vni
-                } else {
-                    ime_core::Scheme::Telex
-                },
+                scheme,
                 ..EngineConfig::default()
             };
             let mut host = FakeHost::new(cfg);

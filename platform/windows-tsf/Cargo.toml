@@ -1,0 +1,38 @@
+[package]
+name = "pkey-tsf"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "pkey_tsf"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Test-only: `ActivateEx` ignores a refused key-sink registration. TSF only accepts that call from a
+# text service it activated itself, which a test without a registered input method cannot get.
+test-hooks = []
+
+[dependencies]
+ime-runtime.workspace = true
+ime-winkeys.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+# The `#[implement]` macro expands to paths in this crate, so it must be a direct dependency.
+windows-core = "0.62"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Globalization",
+    "Win32_Security",
+    "Win32_System_Com",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Ole",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_System_Variant",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_TextServices",
+    "Win32_UI_WindowsAndMessaging",
+] }

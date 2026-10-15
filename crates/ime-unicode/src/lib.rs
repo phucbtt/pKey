@@ -1,4 +1,4 @@
-//! Unicode helpers for VietIME: shape/tone marks, NFC/NFD rendering and caret offsets.
+//! Unicode helpers for pKey: shape/tone marks, NFC/NFD rendering and caret offsets.
 //!
 //! No I/O and no OS API (spec §6.2, §10).
 #![forbid(unsafe_code)]

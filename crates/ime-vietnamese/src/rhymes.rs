@@ -3,7 +3,7 @@
 //! Clusters are given as display characters (`ê`, `ơ`, ...) without tone marks.
 //! Entries without `""` in their final list need a final consonant to be complete.
 
-use crate::{strip_shape, Validity};
+use crate::Validity;
 
 const STOP_AND_NASAL: &[&str] = &["c", "m", "n", "ng", "p", "t"];
 
@@ -65,6 +65,22 @@ pub(crate) const RHYMES: &[(&str, &[&str])] = &[
     ("uêu", &[""]),
 ];
 
+fn strip_char(c: char) -> char {
+    match c {
+        'ă' | 'â' => 'a',
+        'ê' => 'e',
+        'ô' | 'ơ' => 'o',
+        'ư' => 'u',
+        c => c,
+    }
+}
+
+/// A typed vowel fits a table vowel when they are equal, or when the typed one is still unmarked
+/// and the table vowel is its marked form (a mark may be added later).
+fn vowel_fits(typed: char, table: char) -> bool {
+    typed == table || typed == strip_char(table)
+}
+
 /// Classify `nucleus` + `coda` (both display text, non-empty nucleus).
 pub(crate) fn classify(nucleus: &str, coda: &str) -> Validity {
     if RHYMES
@@ -73,14 +89,18 @@ pub(crate) fn classify(nucleus: &str, coda: &str) -> Validity {
     {
         return Validity::Valid;
     }
-    // Could become valid by typing more letters or by adding a shape mark.
-    let sn = strip_shape(nucleus);
+    // Could become valid by typing more letters or by adding a shape mark to unmarked vowels.
+    let typed: Vec<char> = nucleus.chars().collect();
     let can_extend = RHYMES.iter().any(|(c, codas)| {
-        let se = strip_shape(c);
-        if se == sn {
+        let table: Vec<char> = c.chars().collect();
+        if typed.len() > table.len() || !typed.iter().zip(&table).all(|(t, e)| vowel_fits(*t, *e)) {
+            return false;
+        }
+        if typed.len() == table.len() {
             codas.iter().any(|f| f.starts_with(coda))
         } else {
-            se.starts_with(&sn) && coda.is_empty()
+            // more vowels may follow, but no final consonant yet
+            coda.is_empty()
         }
     });
     if can_extend {
