@@ -186,7 +186,7 @@ Kiểm thử đầu cuối:
 
 - **IBus** (cần `ibus`, `python3-gi`, `gir1.2-ibus-1.0`): `scripts/linux/e2e-ibus.sh`. Chạy một `ibus-daemon`
   riêng, không đụng phiên IBus của bạn.
-- **Windows app** (cần cờ `test-hooks`, không bật trong bản phát hành): `PKEY_RUN_E2E=1 cargo test -p pkey-app --features test-hooks`.
+- **Windows app** (cần cờ `test-hooks`, chỉ build được ở chế độ debug, bị chặn lúc biên dịch trong bản phát hành): `PKEY_RUN_E2E=1 cargo test -p pkey-app --features test-hooks`.
 
 CI chạy trên Ubuntu, Windows và macOS, gồm test, clippy, C harness với sanitizer, kiểm tra IBus trên Ubuntu
 22.04 và 24.04, và `cargo-deny`.

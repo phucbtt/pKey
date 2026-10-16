@@ -187,6 +187,24 @@ struct Pending {
     outcome: KeyOutcome,
 }
 
+/// Marks "one of our own edit sessions is running" and clears the mark when dropped, also when a
+/// caught panic unwinds out of the session: a mark that stayed set would stop caret moves from
+/// ending the composition.
+struct OurEdit<'a>(&'a Cell<bool>);
+
+impl<'a> OurEdit<'a> {
+    fn enter(flag: &'a Cell<bool>) -> OurEdit<'a> {
+        flag.set(true);
+        OurEdit(flag)
+    }
+}
+
+impl Drop for OurEdit<'_> {
+    fn drop(&mut self) {
+        self.0.set(false);
+    }
+}
+
 /// State shared with edit-session closures.
 struct Shared {
     thread_mgr: RefCell<Option<ITfThreadMgr>>,
@@ -284,10 +302,49 @@ impl Shared {
 
     fn forget_context(&self, pic: &ITfContext) {
         self.secure_cache.borrow_mut().remove(&identity_of(pic));
-        if let Some(st) = self.contexts.borrow_mut().remove(&identity_of(pic)) {
+        // Take the entry out first: the borrow must not stay open across COM calls and drops of
+        // host interface references.
+        let removed = self.contexts.borrow_mut().remove(&identity_of(pic));
+        if let Some(st) = removed {
             Self::unadvise_edit_sink(&st);
             runtime().destroy_context(st.id);
         }
+    }
+
+    /// Undo everything `activate` set up. Used by `Deactivate` and when `activate` fails half way
+    /// (TSF does not call `Deactivate` for an activation that returned an error).
+    ///
+    /// Every advised sink is unadvised and every strong reference to our own interfaces is
+    /// dropped. Without that, `TextService` -> `Shared` -> sink -> `TextService` is a reference
+    /// cycle: the service is never released, `LIVE_OBJECTS` never returns to zero and
+    /// `DllCanUnloadNow` keeps the DLL loaded in the host.
+    fn teardown(&self) {
+        let thread_mgr = self.thread_mgr.borrow_mut().take();
+        if let Some(tm) = thread_mgr {
+            // SAFETY: undoes exactly what `activate` advised; an advise that never happened only
+            // makes the call fail, which is ignored.
+            unsafe {
+                if let Ok(k) = tm.cast::<ITfKeystrokeMgr>() {
+                    let _ = k.UnadviseKeyEventSink(self.client_id.get());
+                }
+                if let Ok(s) = tm.cast::<ITfSource>() {
+                    let _ = s.UnadviseSink(self.thread_sink_cookie.get());
+                }
+            }
+        }
+        let contexts: Vec<CtxState> = self.contexts.borrow_mut().drain().map(|(_, v)| v).collect();
+        for st in contexts {
+            Self::unadvise_edit_sink(&st);
+            runtime().destroy_context(st.id);
+        }
+        self.secure_cache.borrow_mut().clear();
+        *self.pending.borrow_mut() = None;
+        self.fed.set(None);
+        // Break the reference cycle. Edit sessions already queued hold their own clones.
+        self.composition_sink.borrow_mut().take();
+        self.edit_sink.borrow_mut().take();
+        self.client_id.set(0);
+        self.thread_sink_cookie.set(0);
     }
 
     /// An edit happened on `pic`. When the selection moved and it was not our doing, whatever is
@@ -320,16 +377,14 @@ impl Shared {
         let shared = Rc::clone(self);
         let ctx = pic.clone();
         let _result = session::run_when_possible(pic, self.client_id.get(), move |ec| {
-            shared.in_our_edit.set(true);
+            let _own = OurEdit::enter(&shared.in_our_edit);
             // SAFETY: COM calls inside a valid edit session.
-            let r = unsafe {
+            unsafe {
                 if let Ok(range) = comp.GetRange() {
                     shared.clear_attribute(&ctx, ec, &range);
                 }
                 comp.EndComposition(ec)
-            };
-            shared.in_our_edit.set(false);
-            r
+            }
         });
         trace!("end composition session -> {_result:?}");
     }
@@ -456,14 +511,15 @@ impl Shared {
         }
         let key = identity_of(pic);
         let (shared, ctx, sink2) = (Rc::clone(self), pic.clone(), sink.clone());
-        self.in_our_edit.set(true);
-        let result = session::run_sync(pic, self.client_id.get(), move |ec| {
-            for a in &actions {
-                shared.apply_action(&ctx, ec, &sink2, key, a)?;
-            }
-            Ok(())
-        });
-        self.in_our_edit.set(false);
+        let result = {
+            let _own = OurEdit::enter(&self.in_our_edit);
+            session::run_sync(pic, self.client_id.get(), move |ec| {
+                for a in &actions {
+                    shared.apply_action(&ctx, ec, &sink2, key, a)?;
+                }
+                Ok(())
+            })
+        };
         if result.is_err() {
             // The document did not take our edit: forget the composition and tell the engine.
             if let Some(st) = self.contexts.borrow_mut().get_mut(&key) {
@@ -799,12 +855,24 @@ impl TextService_Impl {
         let tm: ITfThreadMgr = ptim.ok()?.clone();
         let shared = &self.shared;
         shared.client_id.set(tid);
-        // SAFETY: COM calls with live interface pointers; sinks are unadvised in `Deactivate`.
+        let result = self.advise_all(&tm, tid);
+        if result.is_err() {
+            // TSF does not call `Deactivate` after a failed activation: undo what was advised.
+            shared.teardown();
+        }
+        result
+    }
+
+    fn advise_all(&self, tm: &ITfThreadMgr, tid: u32) -> Result<()> {
+        let shared = &self.shared;
+        // SAFETY: COM calls with live interface pointers; sinks are unadvised in `teardown`.
         unsafe {
             let source: ITfSource = tm.cast()?;
             let thread_sink: ITfThreadMgrEventSink = self.to_interface();
             let cookie = source.AdviseSink(&ITfThreadMgrEventSink::IID, &thread_sink)?;
             shared.thread_sink_cookie.set(cookie);
+            // Stored as soon as something is advised, so `teardown` can always undo it.
+            *shared.thread_mgr.borrow_mut() = Some(tm.clone());
 
             let keystroke: ITfKeystrokeMgr = tm.cast()?;
             *shared.composition_sink.borrow_mut() = Some(self.to_interface());
@@ -822,7 +890,6 @@ impl TextService_Impl {
                 .attribute_atom
                 .set(cat.RegisterGUID(&GUID_DISPLAY_ATTRIBUTE_COMPOSITION)?);
         }
-        *shared.thread_mgr.borrow_mut() = Some(tm);
         Ok(())
     }
 }
@@ -834,28 +901,7 @@ impl ITfTextInputProcessor_Impl for TextService_Impl {
 
     fn Deactivate(&self) -> Result<()> {
         guard(fail(), || {
-            let shared = &self.shared;
-            if let Some(tm) = shared.thread_mgr.borrow_mut().take() {
-                // SAFETY: undoes exactly what `activate` advised.
-                unsafe {
-                    if let Ok(k) = tm.cast::<ITfKeystrokeMgr>() {
-                        let _ = k.UnadviseKeyEventSink(shared.client_id.get());
-                    }
-                    if let Ok(s) = tm.cast::<ITfSource>() {
-                        let _ = s.UnadviseSink(shared.thread_sink_cookie.get());
-                    }
-                }
-            }
-            let contexts: Vec<CtxState> = shared
-                .contexts
-                .borrow_mut()
-                .drain()
-                .map(|(_, v)| v)
-                .collect();
-            for st in contexts {
-                runtime().destroy_context(st.id);
-            }
-            shared.client_id.set(0);
+            self.shared.teardown();
             Ok(())
         })
     }

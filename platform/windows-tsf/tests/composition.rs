@@ -812,6 +812,41 @@ fn fixture_or_skip() -> Option<Fixture> {
     f
 }
 
+/// Current COM reference count of the object behind `i` (AddRef returns the new count).
+fn ref_count<T: Interface>(i: &T) -> u32 {
+    // SAFETY: every COM interface pointer starts with a pointer to a table whose first three
+    // entries are the `IUnknown` methods.
+    unsafe {
+        let raw = i.as_raw();
+        let vtbl = *(raw as *const *const windows::core::IUnknown_Vtbl);
+        let n = ((*vtbl).AddRef)(raw);
+        ((*vtbl).Release)(raw);
+        n - 1
+    }
+}
+
+/// `Deactivate` must drop everything the service holds on itself (the sinks it handed to TSF and
+/// keeps for later use). Before the fix those two strong references formed a cycle with the
+/// service, so it was never released and the DLL could never unload from the host.
+#[test]
+fn deactivating_releases_every_reference_the_service_took() {
+    let Some(f) = fixture_or_skip() else { return };
+    // Use the service enough to create a context (which advises the edit sink) and a composition.
+    f.type_text("tiee");
+    f.type_text(" ");
+    let active = ref_count(&f.tip);
+    unsafe { f.tip.Deactivate().unwrap() };
+    let after = ref_count(&f.tip);
+    eprintln!("references while active: {active}, after Deactivate: {after}");
+    // The test itself keeps two (`tip` and `key_sink`); nothing else may be left.
+    assert_eq!(
+        after,
+        2,
+        "the service still holds {} reference(s) to itself after Deactivate",
+        after.saturating_sub(2)
+    );
+}
+
 #[test]
 fn a_composition_ended_by_the_host_is_forgotten() {
     let Some(f) = fixture_or_skip() else { return };
