@@ -38,8 +38,14 @@ fn main() {
 
         if compiled {
             println!("cargo:rustc-link-arg-bins={}", res_path.display());
-        } else if Path::new("app.res").exists() {
-            println!("cargo:rustc-link-arg-bins=app.res");
+        } else {
+            // The linker runs from the workspace root, so the checked-in resource needs an
+            // absolute path (a bare "app.res" is "cannot open input file" on CI).
+            let checked_in =
+                Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("app.res");
+            if checked_in.exists() {
+                println!("cargo:rustc-link-arg-bins={}", checked_in.display());
+            }
         }
     }
 }

@@ -61,6 +61,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
+      # rust-toolchain.toml pins the toolchain the build really uses, so the target must be added to
+      # that one (the action above only adds it to stable).
+      - name: add the musl target to the pinned toolchain
+        run: rustup target add x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
       - name: install IBus and its Python bindings
         run: sudo apt-get update && sudo apt-get install -y ibus python3-gi gir1.2-ibus-1.0

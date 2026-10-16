@@ -246,7 +246,7 @@ unsafe extern "system" fn checkbox_subclass(
             };
 
             if is_checked {
-                // EVKey Electric Blue: #0D84FF (BGR: 0x00FF_840D)
+                // Electric blue: #0D84FF (BGR: 0x00FF_840D)
                 let blue_brush = CreateSolidBrush(COLORREF(0x00FF_840D));
                 let blue_pen = CreatePen(PS_SOLID, 1, COLORREF(0x00FF_840D));
                 let old_b = SelectObject(hdc, blue_brush.into());

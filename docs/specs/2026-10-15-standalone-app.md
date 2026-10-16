@@ -1,7 +1,7 @@
-# 2026-10-15 — App độc lập kiểu EVKey (`pkey.exe`)
+# 2026-10-15 — App khay độc lập (`pkey.exe`)
 
 ## Yêu cầu
-Một chương trình chạy ở khay hệ thống, gõ tiếng Việt vào **mọi** ứng dụng mà không phải thêm bàn phím trong Windows Settings (như EVKey). Bản TSF không làm được điều này, nên đây là một đường thứ hai dùng chung lõi (`ime-runtime`). Trong spec gốc, đây là "hook fallback" F014 (dự kiến 1.1); nó được đưa lên làm đường chính theo yêu cầu.
+Một chương trình chạy ở khay hệ thống, gõ tiếng Việt vào **mọi** ứng dụng mà không phải thêm bàn phím trong Windows Settings. Bản TSF không làm được điều này, nên đây là một đường thứ hai dùng chung lõi (`ime-runtime`). Trong spec gốc, đây là "hook fallback" F014 (dự kiến 1.1); nó được đưa lên làm đường chính theo yêu cầu.
 
 ## Cách hoạt động
 - **Hook `WH_KEYBOARD_LL`** thấy mỗi phím trước ứng dụng. Với mỗi phím, `Controller` (thuần, không Win32) trả về: có nuốt phím không và các thao tác cần chèn.
@@ -51,7 +51,7 @@ PKEY_RUN_E2E=1 cargo test -p pkey-app --features test-hooks --test e2e -- --noca
 ## Sửa lỗi: thanh địa chỉ trình duyệt (caách thay vì cách)
 Thanh địa chỉ Chrome/Edge/Firefox tự điền phần gợi ý (được bôi chọn) sau chữ đang gõ. Khi app đổi ca thành cá, Backspace đầu tiên xóa phần gợi ý chứ không xóa chữ \a, nên ra ca + á. Sửa: trước Backspace đầu tiên, nếu ứng dụng là trình duyệt (chrome/msedge/brave/vivaldi/opera/firefox/arc/chromium.exe) thì gõ ký tự U+202F rồi xóa nó (Op::ClearAutocomplete), việc này dập gợi ý mà không đổi văn bản. Chỉ thêm khi có Backspace; thao tác chỉ nối chữ không cần. Test: \browsers_get_the_autocomplete_fix_only_before_backspaces, 	he_autocomplete_fix_is_an_invisible_character_and_a_backspace. **Chưa kiểm trên Chrome thật** (test e2e chỉ dùng ô EDIT); cần người dùng thử lại.
 
-## Cửa sổ Cài đặt (như EVKey)
+## Cửa sổ Cài đặt
 Mở bằng menu khay "Cài đặt...", nháy đúp icon khay, hoặc hotkey open_settings; cờ --settings[=N] mở thẳng tab N. Win32 thuần (không thêm thư viện), 4 tab: **Chung** (kiểu gõ Telex/VNI/VIQR, bảng mã, kiểu đặt dấu, 10 tùy chọn gồm chính tả, tự khôi phục, bỏ dấu tự do, Esc, Backspace theo phím, w→ư, [ ], phụ âm f j w z, macro, khởi động cùng Windows), **Phím tắt** (Ctrl/Shift/Alt/Win + phím thêm, mặc định Ctrl+Shift), **Gõ tắt** (thêm/cập nhật/xóa, lưu vào macros.json), **Ứng dụng** (danh sách chương trình mà pKey không làm gì, lưu thành profile game mode có tiền tố tên Tắt pKey:  nên không đụng profile viết tay). OK/Áp dụng kiểm tra rồi áp dụng ngay và lưu atomic; Hủy không lưu.
 
 Cấu trúc: settings_model.rs (thuần, 9 test: đọc/ghi cấu hình, hotkey, profile loại trừ), win/settings.rs (cửa sổ), Runtime::update_macros. Giao diện hiện đại (comctl32 v6) qua /MANIFESTDEPENDENCY trong \build.rs. Kiểm thử: 	ests/settings_ui.rs (chỉ chạy khi PKEY_RUN_E2E=1) mở cửa sổ thật, bấm nút, xác nhận config.toml/macros.json, mở lại, Hủy; đã PASS. Đã chụp màn hình các tab để kiểm bố cục.

@@ -2,7 +2,7 @@
 ; Build with scripts\windows\build-installer.ps1, which compiles everything first.
 ;
 ; Two ways to type Vietnamese, installed side by side:
-;   * pKey app: a tray program, like EVKey, that works in every application at once.
+;   * pKey app: a tray program that works in every application at once.
 ;   * pKey keyboard (optional): a Windows text service. Use one of the two, not both.
 ; The text service is registered for the current user only (HKCU) with `regsvr32 /n /i:user`.
 ; A machine-wide, signed installer is a separate deliverable.

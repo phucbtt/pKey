@@ -12,7 +12,7 @@
 **pKey** là bộ gõ tiếng Việt đa nền tảng, hỗ trợ kiểu gõ Telex, VNI và VIQR. Lõi được viết bằng
 Rust và dùng chung cho mọi nền tảng: Windows (app khay và TSF), Ubuntu/Debian (IBus).
 
-- Gõ được ở mọi ứng dụng, không cần thêm bàn phím trong cài đặt hệ thống (bản app khay, giống EVKey).
+- Gõ được ở mọi ứng dụng, không cần thêm bàn phím trong cài đặt hệ thống (bản app khay).
 - Kiểm tra chính tả, tự khôi phục từ không phải tiếng Việt (ví dụ `windows`), đặt dấu kiểu cũ/mới.
 - Macro, profile theo ứng dụng, phím tắt đổi Việt/English.
 - Cấu hình bằng một file `config.toml` dễ đọc, có kiểm tra lỗi.
