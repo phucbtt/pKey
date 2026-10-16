@@ -73,6 +73,40 @@ jobs:
       - name: build the .deb
         run: scripts/linux/build-deb.sh
 
+  # Stable Rust needs Windows 10, so the Windows build that also runs on Windows 7 SP1 and 8.x is
+  # built from source on a pinned nightly (scripts/windows/win7-toolchain.txt). There is no Windows 7
+  # runner, so the guard is static: no import of a DLL that Windows 7 lacks.
+  windows-7:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install the pinned nightly
+        shell: pwsh
+        run: |
+          $tc = (Get-Content scripts/windows/win7-toolchain.txt -TotalCount 1).Trim()
+          "TOOLCHAIN=$tc" | Out-File -Append -Encoding ascii $env:GITHUB_ENV
+          rustup toolchain install $tc --profile minimal -c rust-src
+      - uses: Swatinem/rust-cache@v2
+      - name: build for Windows 7 and check imports
+        shell: pwsh
+        env:
+          # RUSTFLAGS replaces .cargo/config.toml's flags, so the static C runtime is repeated here
+          # (without it the build would import vcruntime140.dll, which a clean Windows 7 lacks).
+          RUSTFLAGS: -C target-feature=+crt-static
+        run: |
+          . scripts/windows/win7-imports.ps1
+          $std = '-Zbuild-std=std,panic_unwind'
+          cargo "+$env:TOOLCHAIN" build -p pkey-app --profile dist --target i686-win7-windows-msvc $std
+          if ($LASTEXITCODE -ne 0) { throw 'pkey-app build failed' }
+          Assert-Win7Imports target/i686-win7-windows-msvc/dist/pkey.exe
+          foreach ($t in 'x86_64-win7-windows-msvc', 'i686-win7-windows-msvc') {
+            cargo "+$env:TOOLCHAIN" build -p pkey-tsf --release --target $t $std
+            if ($LASTEXITCODE -ne 0) { throw "pkey-tsf build failed for $t" }
+            $dll = "target/$t/release/pkey_tsf.dll"
+            [void](Repair-Win7Imports $dll)
+            Assert-Win7Imports $dll
+          }
+
   deny:
     runs-on: ubuntu-latest
     steps:

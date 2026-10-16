@@ -25,7 +25,8 @@ DisableDirPage=yes
 UsePreviousAppDir=no
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
-ArchitecturesAllowed=x64compatible
+; Runs on 32-bit and 64-bit Windows 7 SP1 and newer (MinVersion defaults to 6.1sp1). On 64-bit
+; Windows Setup runs in 64-bit mode so {sys} is the real System32 (the 64-bit regsvr32).
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\..\target\installer
 OutputBaseFilename=pKey-Setup-{#AppVersion}
@@ -53,9 +54,10 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "{#BuildDir}\x64\pkey.exe"; DestDir: "{app}\bin"; Components: app; Flags: ignoreversion restartreplace
-Source: "{#BuildDir}\x64\pkey-cli.exe"; DestDir: "{app}\bin"; Components: app; Flags: ignoreversion
-Source: "{#BuildDir}\x64\pkey_tsf.dll"; DestDir: "{app}\bin\x64"; Components: tsf; Flags: ignoreversion restartreplace uninsrestartdelete
+; The app is one 32-bit build for every Windows: it runs on x86, x64 and ARM64.
+Source: "{#BuildDir}\x86\pkey.exe"; DestDir: "{app}\bin"; Components: app; Flags: ignoreversion restartreplace
+Source: "{#BuildDir}\x86\pkey-cli.exe"; DestDir: "{app}\bin"; Components: app; Flags: ignoreversion
+Source: "{#BuildDir}\x64\pkey_tsf.dll"; DestDir: "{app}\bin\x64"; Components: tsf; Check: Is64BitInstallMode; Flags: ignoreversion restartreplace uninsrestartdelete
 Source: "{#BuildDir}\x86\pkey_tsf.dll"; DestDir: "{app}\bin\x86"; Components: tsf; Flags: ignoreversion restartreplace uninsrestartdelete
 Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -76,13 +78,13 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "VietIME"; Flags: deletevalue
 
 [Run]
-Filename: "{sys}\regsvr32.exe"; Parameters: "/s /n /i:user ""{app}\bin\x64\pkey_tsf.dll"""; Components: tsf; Flags: runhidden; StatusMsg: "Registering the 64-bit keyboard..."
+Filename: "{sys}\regsvr32.exe"; Parameters: "/s /n /i:user ""{app}\bin\x64\pkey_tsf.dll"""; Components: tsf; Check: Is64BitInstallMode; Flags: runhidden; StatusMsg: "Registering the 64-bit keyboard..."
 Filename: "{syswow64}\regsvr32.exe"; Parameters: "/s /n /i:user ""{app}\bin\x86\pkey_tsf.dll"""; Components: tsf; Flags: runhidden; StatusMsg: "Registering the 32-bit keyboard..."
 Filename: "{app}\bin\pkey.exe"; Description: "Start pKey now"; Components: app; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/f /im pkey.exe"; Flags: runhidden; RunOnceId: "StopApp"
-Filename: "{sys}\regsvr32.exe"; Parameters: "/s /u /n /i:user ""{app}\bin\x64\pkey_tsf.dll"""; Flags: runhidden; RunOnceId: "UnregX64"
+Filename: "{sys}\regsvr32.exe"; Parameters: "/s /u /n /i:user ""{app}\bin\x64\pkey_tsf.dll"""; Check: Is64BitInstallMode; Flags: runhidden; RunOnceId: "UnregX64"
 Filename: "{syswow64}\regsvr32.exe"; Parameters: "/s /u /n /i:user ""{app}\bin\x86\pkey_tsf.dll"""; Flags: runhidden; RunOnceId: "UnregX86"
 
 [Code]
